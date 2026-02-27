@@ -32,7 +32,27 @@ jobs:
         run: cd WuhuApp && xcodegen generate
 
       - name: Build macOS
-        run: xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuAppMac -destination 'platform=macOS' -skipMacroValidation -skipPackagePluginValidation -quiet
+        run: >
+          xcodebuild build
+          -project WuhuApp/WuhuApp.xcodeproj
+          -scheme WuhuAppMac
+          -destination 'platform=macOS'
+          -skipMacroValidation
+          -skipPackagePluginValidation
+          CODE_SIGN_IDENTITY=""
+          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGNING_ALLOWED=NO
+          -quiet
 
       - name: Build iOS
-        run: xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination 'generic/platform=iOS' -skipMacroValidation -skipPackagePluginValidation -quiet
+        run: >
+          xcodebuild build
+          -project WuhuApp/WuhuApp.xcodeproj
+          -scheme WuhuApp
+          -destination 'generic/platform=iOS'
+          -skipMacroValidation
+          -skipPackagePluginValidation
+          CODE_SIGN_IDENTITY=""
+          CODE_SIGNING_REQUIRED=NO
+          CODE_SIGNING_ALLOWED=NO
+          -quiet
