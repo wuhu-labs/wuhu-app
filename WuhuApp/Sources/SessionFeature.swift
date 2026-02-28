@@ -54,6 +54,9 @@ struct SessionFeature {
       }
     }
 
+    /// Stop state
+    var isStopping = false
+
     /// Streaming state
     var streamingText: String = ""
 
@@ -99,6 +102,10 @@ struct SessionFeature {
     case archiveResponse(Result<WuhuArchiveSessionResponse, any Error>)
     case unarchiveResponse(Result<WuhuArchiveSessionResponse, any Error>)
     case toggleShowArchived
+
+    // Stop
+    case stopSessionTapped
+    case stopSessionResponse(Result<WuhuStopSessionResponse, any Error>)
 
     // Commands
     case sendMessage(String)
@@ -404,6 +411,30 @@ struct SessionFeature {
 
       case .toggleShowArchived:
         state.showArchived.toggle()
+        return .none
+
+      // MARK: - Stop
+
+      case .stopSessionTapped:
+        guard let sessionID = state.selectedSessionID else { return .none }
+        guard !state.isStopping else { return .none }
+        state.isStopping = true
+        return .run { send in
+          await send(
+            .stopSessionResponse(
+              Result { try await apiClient.stopSession(sessionID) },
+            ),
+          )
+        }
+
+      case .stopSessionResponse(.success):
+        state.isStopping = false
+        // The subscription will pick up the statusUpdated event.
+        return .none
+
+      case let .stopSessionResponse(.failure(error)):
+        state.isStopping = false
+        state.subscriptionError = "Stop failed: \(error)"
         return .none
 
       // MARK: - Commands
@@ -740,6 +771,21 @@ struct SessionDetailView: View {
     .toolbar {
       if store.selectedSession != nil {
         ToolbarItemGroup(placement: .primaryAction) {
+          if store.executionStatus == .running {
+            if store.isStopping {
+              ProgressView()
+                .controlSize(.small)
+                .help("Stopping…")
+            } else {
+              Button {
+                store.send(.stopSessionTapped)
+              } label: {
+                Label("Stop", systemImage: "stop.circle.fill")
+              }
+              .help("Stop session execution")
+            }
+          }
+
           Button("Model") {
             store.isShowingModelPicker = true
           }
