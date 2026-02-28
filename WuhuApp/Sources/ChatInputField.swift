@@ -142,7 +142,8 @@ struct ChatInputField<Toolbar: View>: View {
           for item in newItems {
             if let data = try? await item.loadTransferable(type: Data.self) {
               let mimeType = mimeTypeForPhotosItem(item)
-              onAddImage?(data, mimeType)
+              let prepared = ImageResizer.prepare(data: data, sourceMimeType: mimeType)
+              onAddImage?(prepared.data, prepared.mimeType)
             }
           }
           selectedPhotos = []
@@ -186,7 +187,8 @@ struct ChatInputField<Toolbar: View>: View {
       for url in panel.urls {
         if let data = try? Data(contentsOf: url) {
           let mimeType = mimeTypeForExtension(url.pathExtension.lowercased())
-          onAddImage?(data, mimeType)
+          let prepared = ImageResizer.prepare(data: data, sourceMimeType: mimeType)
+          onAddImage?(prepared.data, prepared.mimeType)
         }
       }
     }
