@@ -15,7 +15,8 @@ struct APIClient: Sendable {
   var listEnvironments: @Sendable () async throws -> [WuhuEnvironmentDefinition]
   var listWorkspaceDocs: @Sendable () async throws -> [WuhuWorkspaceDocSummary]
   var readWorkspaceDoc: @Sendable (_ path: String) async throws -> WuhuWorkspaceDoc
-  var enqueue: @Sendable (_ sessionID: String, _ input: String, _ user: String?, _ lane: UserQueueLane) async throws -> String
+  var enqueue: @Sendable (_ sessionID: String, _ content: MessageContent, _ user: String?, _ lane: UserQueueLane) async throws -> String
+  var uploadBlob: @Sendable (_ sessionID: String, _ data: Data, _ mimeType: String) async throws -> String
   var renameSession: @Sendable (_ sessionID: String, _ title: String) async throws -> WuhuRenameSessionResponse
   var archiveSession: @Sendable (_ sessionID: String) async throws -> WuhuArchiveSessionResponse
   var unarchiveSession: @Sendable (_ sessionID: String) async throws -> WuhuArchiveSessionResponse
@@ -91,12 +92,15 @@ extension APIClient: DependencyKey {
       listEnvironments: { try await makeClient().listEnvironments() },
       listWorkspaceDocs: { try await makeClient().listWorkspaceDocs() },
       readWorkspaceDoc: { try await makeClient().readWorkspaceDoc(path: $0) },
-      enqueue: { sessionID, input, user, lane in
+      enqueue: { sessionID, content, user, lane in
         let clientLane: WuhuClient.EnqueueLane = switch lane {
         case .steer: .steer
         case .followUp: .followUp
         }
-        return try await makeClient().enqueue(sessionID: sessionID, input: input, user: user, lane: clientLane)
+        return try await makeClient().enqueue(sessionID: sessionID, content: content, user: user, lane: clientLane)
+      },
+      uploadBlob: { sessionID, data, mimeType in
+        try await makeClient().uploadBlob(sessionID: sessionID, data: data, mimeType: mimeType)
       },
       renameSession: { sessionID, title in
         try await makeClient().renameSession(id: sessionID, title: title)
@@ -149,6 +153,7 @@ extension APIClient: DependencyKey {
     listWorkspaceDocs: { [] },
     readWorkspaceDoc: { _ in WuhuWorkspaceDoc(path: "", frontmatter: [:], body: "") },
     enqueue: { _, _, _, _ in "" },
+    uploadBlob: { _, _, _ in "blob://preview/test.png" },
     renameSession: { _, _ in
       WuhuRenameSessionResponse(session: WuhuSession(
         id: "preview",
@@ -273,17 +278,20 @@ enum TranscriptConverter {
       switch msg {
       case let .user(userMsg):
         let text = extractText(from: userMsg.content)
-        guard !text.isEmpty else { continue }
+        let images = extractImages(from: userMsg.content)
+        guard !text.isEmpty || !images.isEmpty else { continue }
         messages.append(MockMessage(
           id: "entry-\(entry.id)",
           role: .user,
           author: userMsg.user == WuhuUserMessage.unknownUser ? nil : userMsg.user,
           content: text,
+          images: images,
           timestamp: userMsg.timestamp,
         ))
 
       case let .assistant(assistantMsg):
         let text = extractText(from: assistantMsg.content)
+        let images = extractImages(from: assistantMsg.content)
         let toolCalls = assistantMsg.content.compactMap { block -> MockToolCall? in
           guard case let .toolCall(id, name, arguments) = block else { return nil }
           let resultText: String = if let exec = toolResults[id], let result = exec.result {
@@ -298,11 +306,12 @@ enum TranscriptConverter {
             result: resultText,
           )
         }
-        if !text.isEmpty || !toolCalls.isEmpty {
+        if !text.isEmpty || !toolCalls.isEmpty || !images.isEmpty {
           messages.append(MockMessage(
             id: "entry-\(entry.id)",
             role: .assistant,
             content: text,
+            images: images,
             timestamp: assistantMsg.timestamp,
             toolCalls: toolCalls,
           ))
@@ -385,6 +394,15 @@ enum TranscriptConverter {
       if case let .text(text, _) = block { return text }
       return nil
     }.joined()
+  }
+
+  private static func extractImages(from content: [WuhuContentBlock]) -> [MockImageAttachment] {
+    content.compactMap { block -> MockImageAttachment? in
+      if case let .image(blobURI, mimeType) = block {
+        return MockImageAttachment(blobURI: blobURI, mimeType: mimeType)
+      }
+      return nil
+    }
   }
 
   private static func formatArguments(_ args: JSONValue) -> String {
