@@ -272,6 +272,17 @@ enum TranscriptConverter {
       }
     }
 
+    // Also build tool result lookup from toolResult messages
+    var toolResultMessages: [String: String] = [:]
+    for entry in visibleEntries {
+      if case let .message(.toolResult(toolResult)) = entry.payload {
+        let text = extractText(from: toolResult.content)
+        if !text.isEmpty {
+          toolResultMessages[toolResult.toolCallId] = text
+        }
+      }
+    }
+
     var messages: [MockMessage] = []
     for entry in visibleEntries {
       guard case let .message(msg) = entry.payload else { continue }
@@ -296,6 +307,8 @@ enum TranscriptConverter {
           guard case let .toolCall(id, name, arguments) = block else { return nil }
           let resultText: String = if let exec = toolResults[id], let result = exec.result {
             jsonValueToString(result)
+          } else if let msgResult = toolResultMessages[id] {
+            msgResult
           } else {
             ""
           }

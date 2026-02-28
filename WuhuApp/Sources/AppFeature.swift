@@ -833,12 +833,14 @@ struct AppView: View {
           }
           .help("Refresh")
 
+          #if os(macOS)
           Button {
             store.send(.createSessionTapped)
           } label: {
             Image(systemName: "plus")
           }
           .help("New Session")
+          #endif
 
           #if os(iOS)
             Button {
@@ -921,7 +923,10 @@ struct AppView: View {
     switch store.selection {
     case .sessions:
       dualPane {
-        SessionListView(store: store.scope(state: \.sessions, action: \.sessions))
+        SessionListView(
+          store: store.scope(state: \.sessions, action: \.sessions),
+          onCreateSession: { store.send(.createSessionTapped) }
+        )
       } detail: {
         SessionDetailView(store: store.scope(state: \.sessions, action: \.sessions))
       }

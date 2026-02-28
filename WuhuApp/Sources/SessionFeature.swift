@@ -731,6 +731,7 @@ struct SessionFeature {
 
 struct SessionListView: View {
   @Bindable var store: StoreOf<SessionFeature>
+  var onCreateSession: (() -> Void)?
 
   private var visibleSessions: IdentifiedArrayOf<MockSession> {
     if store.showArchived {
@@ -774,6 +775,18 @@ struct SessionListView: View {
         }
         .help("Show archived sessions")
       }
+      #if os(iOS)
+      if let onCreateSession {
+        ToolbarItem(placement: .primaryAction) {
+          Button {
+            onCreateSession()
+          } label: {
+            Image(systemName: "plus")
+          }
+          .help("New Session")
+        }
+      }
+      #endif
     }
     .alert("Rename Session", isPresented: $store.isShowingRenameDialog) {
       TextField("Session title", text: $store.renameText)
@@ -804,6 +817,7 @@ struct SessionDetailView: View {
           session: session,
           streamingText: store.streamingText,
           isRunning: store.executionStatus == .running,
+          isStopping: store.isStopping,
           isRetrying: store.isRetrying,
           retryAttempt: store.retryAttempt,
           retryDelaySeconds: store.retryDelaySeconds,
@@ -814,6 +828,9 @@ struct SessionDetailView: View {
           isUploadingImages: store.isUploadingImages,
           onSend: { message in
             store.send(.sendMessage(message))
+          },
+          onStop: {
+            store.send(.stopSessionTapped)
           },
           onAddImage: { data, mimeType in
             store.send(.addImage(data, mimeType))
@@ -833,21 +850,6 @@ struct SessionDetailView: View {
     .toolbar {
       if store.selectedSession != nil {
         ToolbarItemGroup(placement: .primaryAction) {
-          if store.executionStatus == .running {
-            if store.isStopping {
-              ProgressView()
-                .controlSize(.small)
-                .help("Stopping…")
-            } else {
-              Button {
-                store.send(.stopSessionTapped)
-              } label: {
-                Label("Stop", systemImage: "stop.circle.fill")
-              }
-              .help("Stop session execution")
-            }
-          }
-
           Button("Model") {
             store.isShowingModelPicker = true
           }
@@ -968,6 +970,7 @@ struct SessionThreadView: View {
   let session: MockSession
   var streamingText: String = ""
   var isRunning: Bool = false
+  var isStopping: Bool = false
   var isRetrying: Bool = false
   var retryAttempt: Int = 0
   var retryDelaySeconds: Double = 0
@@ -977,6 +980,7 @@ struct SessionThreadView: View {
   var pendingImages: [PendingImage] = []
   var isUploadingImages: Bool = false
   var onSend: ((String) -> Void)?
+  var onStop: (() -> Void)?
   var onAddImage: ((Data, String) -> Void)?
   var onRemoveImage: ((UUID) -> Void)?
   @State private var draft = ""
@@ -1061,7 +1065,10 @@ struct SessionThreadView: View {
           draft: $draft,
           pendingImages: pendingImages,
           isUploadingImages: isUploadingImages,
+          isRunning: isRunning,
+          isStopping: isStopping,
           onSend: { sendDraft() },
+          onStop: onStop,
           onAddImage: onAddImage,
           onRemoveImage: onRemoveImage,
         ) {
@@ -1388,31 +1395,47 @@ struct ToolCallRow: View {
   let toolCall: MockToolCall
   @State private var isExpanded = false
 
+  private var hasOutput: Bool {
+    !toolCall.result.isEmpty
+  }
+
   var body: some View {
-    DisclosureGroup(isExpanded: $isExpanded) {
-      Text(toolCall.result)
-        .font(.system(.caption, design: .monospaced))
-        .foregroundStyle(.secondary)
-        .textSelection(.enabled)
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.black.opacity(0.04))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-    } label: {
-      HStack(spacing: 6) {
-        Image(systemName: "gearshape")
-          .font(.caption2)
-          .foregroundStyle(.orange)
-        Text(toolCall.name)
+    if hasOutput {
+      DisclosureGroup(isExpanded: $isExpanded) {
+        Text(toolCall.result)
           .font(.system(.caption, design: .monospaced))
-          .fontWeight(.medium)
-        Text(toolCall.arguments)
-          .font(.caption2)
           .foregroundStyle(.secondary)
-          .lineLimit(1)
+          .textSelection(.enabled)
+          .padding(8)
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .background(.black.opacity(0.04))
+          .clipShape(RoundedRectangle(cornerRadius: 4))
+      } label: {
+        toolCallLabel
       }
+      .tint(.secondary)
+      .padding(.vertical, 2)
+    } else {
+      toolCallLabel
+        .padding(.vertical, 2)
     }
-    .tint(.secondary)
-    .padding(.vertical, 2)
+  }
+
+  private var toolCallLabel: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "gearshape")
+        .font(.caption2)
+        .foregroundStyle(.orange)
+      Text(toolCall.name)
+        .font(.system(.caption, design: .monospaced))
+        .fontWeight(.medium)
+        .lineLimit(1)
+        .layoutPriority(1)
+      Text(toolCall.arguments)
+        .font(.caption2)
+        .foregroundStyle(.secondary)
+        .lineLimit(1)
+        .truncationMode(.middle)
+    }
   }
 }
