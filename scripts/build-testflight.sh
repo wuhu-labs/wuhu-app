@@ -63,7 +63,7 @@ cat > "$BUILD_DIR/ExportOptions.plist" << EOF
     <key>method</key>
     <string>app-store-connect</string>
     <key>destination</key>
-    <string>upload</string>
+    <string>export</string>
     <key>teamID</key>
     <string>97W7A3Y9GD</string>
 </dict>
@@ -74,7 +74,11 @@ xcodebuild -exportArchive \
     -archivePath "$BUILD_DIR/WuhuApp.xcarchive" \
     -exportPath "$BUILD_DIR/Export" \
     -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist" \
-    -quiet
+    -quiet \
+    -allowProvisioningUpdates \
+    -authenticationKeyPath "$ASC_KEY_PATH" \
+    -authenticationKeyID "$ASC_KEY_ID" \
+    -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 
 if [ "$NO_UPLOAD" = true ]; then
     echo "⏭️  Skipping upload (--no-upload)"
