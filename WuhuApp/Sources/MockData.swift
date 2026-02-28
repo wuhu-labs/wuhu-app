@@ -118,13 +118,6 @@ struct MockDoc: Identifiable, Equatable {
   var markdownContent: String
 }
 
-struct MockActivityEvent: Identifiable, Equatable {
-  let id: String
-  var description: String
-  var timestamp: Date
-  var icon: String
-}
-
 // MARK: - Static Mock Data
 
 enum MockData {
@@ -783,15 +776,4 @@ enum MockData {
     ),
   ]
 
-  // MARK: Activity Feed
-
-  static let activityFeed: [MockActivityEvent] = [
-    MockActivityEvent(id: "ev-1", description: "Session 'Fix auth token refresh' is running", timestamp: Date().addingTimeInterval(-120), icon: "terminal"),
-    MockActivityEvent(id: "ev-2", description: "minsheng sent a message in #general", timestamp: Date().addingTimeInterval(-600), icon: "bubble.left.and.bubble.right"),
-    MockActivityEvent(id: "ev-3", description: "Issue 'WebSocket reconnect' moved to In Progress", timestamp: Date().addingTimeInterval(-1800), icon: "checklist"),
-    MockActivityEvent(id: "ev-4", description: "CI Build #848 passed on main", timestamp: Date().addingTimeInterval(-1800), icon: "checkmark.circle"),
-    MockActivityEvent(id: "ev-5", description: "anna merged PR #41: WebSocket reconnection", timestamp: Date().addingTimeInterval(-3600), icon: "arrow.triangle.merge"),
-    MockActivityEvent(id: "ev-6", description: "Doc 'Architecture Overview' updated by yihan", timestamp: Date().addingTimeInterval(-86400), icon: "doc.text"),
-    MockActivityEvent(id: "ev-7", description: "Issue 'Database migration' marked as Done", timestamp: Date().addingTimeInterval(-172_800), icon: "checkmark.circle"),
-  ]
 }
