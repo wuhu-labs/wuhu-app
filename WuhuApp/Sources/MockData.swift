@@ -28,11 +28,26 @@ struct MockSession: Identifiable, Equatable {
   }
 }
 
+/// An image attachment displayed inline in a message.
+struct MockImageAttachment: Identifiable, Equatable {
+  let id: String
+  /// The blob URI, e.g. `blob://{sessionID}/{filename}`.
+  var blobURI: String
+  var mimeType: String
+
+  init(id: String = UUID().uuidString, blobURI: String, mimeType: String) {
+    self.id = id
+    self.blobURI = blobURI
+    self.mimeType = mimeType
+  }
+}
+
 struct MockMessage: Identifiable, Equatable {
   let id: String
   var role: Role
   var author: String?
   var content: String
+  var images: [MockImageAttachment]
   var timestamp: Date
   var toolCalls: [MockToolCall]
 
@@ -46,6 +61,7 @@ struct MockMessage: Identifiable, Equatable {
     role: Role,
     author: String? = nil,
     content: String,
+    images: [MockImageAttachment] = [],
     timestamp: Date,
     toolCalls: [MockToolCall] = [],
   ) {
@@ -53,6 +69,7 @@ struct MockMessage: Identifiable, Equatable {
     self.role = role
     self.author = author
     self.content = content
+    self.images = images
     self.timestamp = timestamp
     self.toolCalls = toolCalls
   }

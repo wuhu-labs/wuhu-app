@@ -14,7 +14,7 @@ settings:
 packages:
   WuhuCore:
     url: https://github.com/wuhu-labs/wuhu-core.git
-    from: 0.1.0
+    from: 0.3.0
   ComposableArchitecture:
     url: https://github.com/pointfreeco/swift-composable-architecture
     from: 1.23.1
@@ -113,6 +113,7 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        com.apple.security.files.user-selected.read-only: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ms.liu.wuhu.macos
