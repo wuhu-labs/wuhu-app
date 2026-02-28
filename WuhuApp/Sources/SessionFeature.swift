@@ -904,18 +904,37 @@ struct SessionThreadView: View {
 
       // Centered content column
       VStack(spacing: 0) {
-        ScrollView {
-          LazyVStack(alignment: .leading, spacing: 16) {
-            ForEach(session.messages) { message in
-              SessionMessageView(message: message)
+        ScrollViewReader { proxy in
+          ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+              ForEach(session.messages) { message in
+                SessionMessageView(message: message)
+              }
+              if !streamingText.isEmpty {
+                agentStreamingView
+              } else if isRunning {
+                agentThinkingView
+              }
+              Color.clear
+                .frame(height: 1)
+                .id("bottom")
             }
-            if !streamingText.isEmpty {
-              agentStreamingView
-            } else if isRunning {
-              agentThinkingView
+            .padding(16)
+          }
+          #if os(iOS)
+          .scrollDismissesKeyboard(.interactively)
+          #endif
+          .onChange(of: session.messages.count) {
+            withAnimation {
+              proxy.scrollTo("bottom", anchor: .bottom)
             }
           }
-          .padding(16)
+          .onChange(of: streamingText) {
+            proxy.scrollTo("bottom", anchor: .bottom)
+          }
+          .onAppear {
+            proxy.scrollTo("bottom", anchor: .bottom)
+          }
         }
 
         // Pending queues display

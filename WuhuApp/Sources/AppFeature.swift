@@ -7,7 +7,6 @@ import WuhuCoreClient
 // MARK: - Sidebar Selection
 
 enum SidebarSelection: Hashable {
-  case home
   case sessions
   case issues
   case docs
@@ -20,9 +19,8 @@ enum SidebarSelection: Hashable {
 struct AppFeature {
   @ObservableState
   struct State {
-    var selection: SidebarSelection? = .home
+    var selection: SidebarSelection? = .sessions
     var channelsExpanded = true
-    var home = HomeFeature.State()
     var sessions = SessionFeature.State()
     var issues = IssuesFeature.State()
     var docs = DocsFeature.State()
@@ -56,7 +54,6 @@ struct AppFeature {
       channels: IdentifiedArrayOf<MockChannel>,
       docs: IdentifiedArrayOf<MockDoc>,
       issues: IdentifiedArrayOf<MockIssue>,
-      events: [MockActivityEvent],
     )
     case loadFailed
     case refreshTick
@@ -65,7 +62,6 @@ struct AppFeature {
       channels: IdentifiedArrayOf<MockChannel>,
       docs: IdentifiedArrayOf<MockDoc>,
       issues: IdentifiedArrayOf<MockIssue>,
-      events: [MockActivityEvent],
     )
     case channelRefreshTick(String)
     case channelsExpandedChanged(Bool)
@@ -78,7 +74,6 @@ struct AppFeature {
     case createSessionTapped
     case createSession(PresentationAction<CreateChannelFeature.Action>)
     case docs(DocsFeature.Action)
-    case home(HomeFeature.Action)
     case issues(IssuesFeature.Action)
     case selectionChanged(SidebarSelection?)
     case sessions(SessionFeature.Action)
@@ -108,7 +103,6 @@ struct AppFeature {
   @Dependency(\.sessionTransportProvider) var sessionTransportProvider
 
   var body: some ReducerOf<Self> {
-    Scope(state: \.home, action: \.home) { HomeFeature() }
     Scope(state: \.sessions, action: \.sessions) { SessionFeature() }
     Scope(state: \.issues, action: \.issues) { IssuesFeature() }
     Scope(state: \.docs, action: \.docs) { DocsFeature() }
@@ -185,44 +179,22 @@ struct AppFeature {
             }
           }
 
-          // Derive activity feed from recent sessions
-          let events: [MockActivityEvent] = allSessions
-            .sorted(by: { $0.updatedAt > $1.updatedAt })
-            .prefix(10)
-            .enumerated()
-            .map { index, session in
-              let description = switch session.type {
-              case .coding, .forkedChannel:
-                "Session in \(session.environment.name) updated"
-              case .channel:
-                "Activity in #\(session.environment.name)"
-              }
-              return MockActivityEvent(
-                id: "ev-\(index)",
-                description: description,
-                timestamp: session.updatedAt,
-                icon: session.type == .channel ? "bubble.left.and.bubble.right" : "terminal",
-              )
-            }
-
           await send(.dataLoaded(
             sessions: mockSessions,
             channels: mockChannels,
             docs: IdentifiedArray(uniqueElements: docsList),
             issues: IdentifiedArray(uniqueElements: issuesList),
-            events: events,
           ))
         } catch: { _, send in
           await send(.loadFailed)
         }
 
-      case let .dataLoaded(sessions, channels, docs, issues, events):
+      case let .dataLoaded(sessions, channels, docs, issues):
         state.isLoading = false
         state.sessions.sessions = sessions
         state.channels = channels
         state.docs.docs = docs
         state.issues.issues = issues
-        state.home.events = events
         return refreshTimerEffect()
 
       case .loadFailed:
@@ -262,35 +234,15 @@ struct AppFeature {
             }
           }
 
-          let events: [MockActivityEvent] = allSessions
-            .sorted(by: { $0.updatedAt > $1.updatedAt })
-            .prefix(10)
-            .enumerated()
-            .map { index, session in
-              let description = switch session.type {
-              case .coding, .forkedChannel:
-                "Session in \(session.environment.name) updated"
-              case .channel:
-                "Activity in #\(session.environment.name)"
-              }
-              return MockActivityEvent(
-                id: "ev-\(index)",
-                description: description,
-                timestamp: session.updatedAt,
-                icon: session.type == .channel ? "bubble.left.and.bubble.right" : "terminal",
-              )
-            }
-
           await send(.refreshDataLoaded(
             sessions: mockSessions,
             channels: mockChannels,
             docs: IdentifiedArray(uniqueElements: docsList),
             issues: IdentifiedArray(uniqueElements: issuesList),
-            events: events,
           ))
         } catch: { _, _ in }
 
-      case let .refreshDataLoaded(sessions, channels, docs, issues, events):
+      case let .refreshDataLoaded(sessions, channels, docs, issues):
         // Merge sessions: preserve messages, detailed titles, and custom titles
         var mergedSessions: IdentifiedArrayOf<MockSession> = []
         for session in sessions {
@@ -356,7 +308,6 @@ struct AppFeature {
         }
         state.issues.issues = mergedIssues
 
-        state.home.events = events
         return .none
 
       case let .channelRefreshTick(channelID):
@@ -610,7 +561,7 @@ struct AppFeature {
         state.isShowingWorkspaceSwitcher = false
 
         // Reset all loaded data
-        state.selection = .home
+        state.selection = .sessions
         state.sessions.sessions = []
         state.sessions.selectedSessionID = nil
         state.channels = []
@@ -618,7 +569,6 @@ struct AppFeature {
         state.docs.selectedDocID = nil
         state.issues.issues = []
         state.issues.selectedIssueID = nil
-        state.home.events = []
         state.activeChannelID = nil
         state.channelTranscript = []
         state.channelStreamingText = [:]
@@ -679,31 +629,11 @@ struct AppFeature {
               }
             }
 
-            let events: [MockActivityEvent] = allSessions
-              .sorted(by: { $0.updatedAt > $1.updatedAt })
-              .prefix(10)
-              .enumerated()
-              .map { index, session in
-                let description = switch session.type {
-                case .coding, .forkedChannel:
-                  "Session in \(session.environment.name) updated"
-                case .channel:
-                  "Activity in #\(session.environment.name)"
-                }
-                return MockActivityEvent(
-                  id: "ev-\(index)",
-                  description: description,
-                  timestamp: session.updatedAt,
-                  icon: session.type == .channel ? "bubble.left.and.bubble.right" : "terminal",
-                )
-              }
-
             await send(.dataLoaded(
               sessions: mockSessions,
               channels: mockChannels,
               docs: IdentifiedArray(uniqueElements: docsList),
               issues: IdentifiedArray(uniqueElements: issuesList),
-              events: events,
             ))
           } catch: { _, send in
             await send(.loadFailed)
@@ -714,7 +644,7 @@ struct AppFeature {
         state.isShowingWorkspaceSwitcher = shown
         return .none
 
-      case .docs, .home, .issues, .sessions:
+      case .docs, .issues, .sessions:
         return .none
       }
     }
@@ -846,7 +776,6 @@ struct AppView: View {
 
   private var sidebar: some View {
     List(selection: $store.selection.sending(\.selectionChanged)) {
-      sidebarRow("Home", icon: "house", tag: .home)
       sidebarRow(
         "Sessions", icon: "terminal", tag: .sessions,
         count: store.sessions.sessions.count(where: { $0.status == .running }),
@@ -990,12 +919,6 @@ struct AppView: View {
   @ViewBuilder
   private var detailColumn: some View {
     switch store.selection {
-    case .home:
-      dualPane {
-        HomeListView(store: store.scope(state: \.home, action: \.home))
-      } detail: {
-        HomeDetailView(store: store.scope(state: \.home, action: \.home))
-      }
     case .sessions:
       dualPane {
         SessionListView(store: store.scope(state: \.sessions, action: \.sessions))
@@ -1057,7 +980,6 @@ struct AppView: View {
     private var hasDetailSelection: Bool {
       switch store.selection {
       case .sessions: store.sessions.selectedSessionID != nil
-      case .home: store.home.selectedEventID != nil
       case .docs: store.docs.selectedDocID != nil
       default: false
       }
@@ -1067,7 +989,6 @@ struct AppView: View {
     private func clearDetailSelection() {
       switch store.selection {
       case .sessions: store.send(.sessions(.sessionSelected(nil)))
-      case .home: store.send(.home(.eventSelected(nil)))
       case .docs: store.send(.docs(.docSelected(nil)))
       default: break
       }

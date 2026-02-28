@@ -11,7 +11,7 @@ struct CreateChannelFeature {
     var environments: [WuhuEnvironmentDefinition] = []
     var selectedEnvironment: String = ""
     var provider: WuhuProvider = .anthropic
-    var modelSelection: String = ""
+    var modelSelection: String = "claude-opus-4-6"
     var customModel: String = ""
     var reasoningEffort: ReasoningEffort?
     var isLoading = false

@@ -43,6 +43,9 @@ struct ChannelChatView: View {
           .padding(.horizontal, 16)
           .padding(.vertical, 12)
         }
+        #if os(iOS)
+        .scrollDismissesKeyboard(.interactively)
+        #endif
 
         Divider()
 
