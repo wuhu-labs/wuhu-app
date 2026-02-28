@@ -12,6 +12,8 @@ struct MockSession: Identifiable, Equatable {
   var model: String
   var status: SessionStatus
   var isArchived: Bool = false
+  /// Non-nil when this session was spawned by another session (child/forked).
+  var parentSessionID: String?
   var updatedAt: Date
   var messages: [MockMessage]
 

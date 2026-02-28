@@ -680,9 +680,9 @@ struct SessionListView: View {
 
   private var visibleSessions: IdentifiedArrayOf<MockSession> {
     if store.showArchived {
-      store.sessions
+      store.sessions.filter { $0.parentSessionID == nil }
     } else {
-      store.sessions.filter { !$0.isArchived }
+      store.sessions.filter { !$0.isArchived && $0.parentSessionID == nil }
     }
   }
 

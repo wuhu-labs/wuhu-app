@@ -436,6 +436,7 @@ extension MockSession {
       model: session.model,
       status: status,
       isArchived: session.isArchived,
+      parentSessionID: session.parentSessionID,
       updatedAt: session.updatedAt,
       messages: messages,
     )
@@ -459,6 +460,7 @@ extension MockSession {
       model: response.session.model,
       status: status,
       isArchived: response.session.isArchived,
+      parentSessionID: response.session.parentSessionID,
       updatedAt: response.session.updatedAt,
       messages: messages,
     )
