@@ -1119,7 +1119,13 @@ private struct PendingQueueSection: View {
   private func pendingItemPreview(_ item: UserQueuePendingItem) -> String {
     switch item.message.content {
     case let .text(text):
-      String(text.prefix(80))
+      return String(text.prefix(80))
+    case let .richContent(parts):
+      let text = parts.compactMap { part -> String? in
+        if case let .text(t) = part { return t }
+        return nil
+      }.joined()
+      return String(text.prefix(80))
     }
   }
 }
