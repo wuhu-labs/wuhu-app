@@ -18,7 +18,10 @@ struct ChatInputField<Toolbar: View>: View {
   var placeholder: String = "Message..."
   var pendingImages: [PendingImage] = []
   var isUploadingImages: Bool = false
+  var isRunning: Bool = false
+  var isStopping: Bool = false
   var onSend: () -> Void
+  var onStop: (() -> Void)?
   var onAddImage: ((Data, String) -> Void)?
   var onRemoveImage: ((UUID) -> Void)?
   @ViewBuilder var toolbar: Toolbar
@@ -86,6 +89,24 @@ struct ChatInputField<Toolbar: View>: View {
 
       VStack(spacing: 6) {
         imagePickerButton
+
+        if isRunning {
+          Button {
+            onStop?()
+          } label: {
+            if isStopping {
+              ProgressView()
+                .controlSize(.small)
+                .frame(width: 28, height: 28)
+            } else {
+              Image(systemName: "stop.circle.fill")
+                .font(.title2)
+                .foregroundStyle(.red)
+            }
+          }
+          .buttonStyle(.plain)
+          .disabled(isStopping)
+        }
 
         Button {
           onSend()
@@ -268,7 +289,10 @@ extension ChatInputField where Toolbar == EmptyView {
     placeholder: String = "Message...",
     pendingImages: [PendingImage] = [],
     isUploadingImages: Bool = false,
+    isRunning: Bool = false,
+    isStopping: Bool = false,
     onSend: @escaping () -> Void,
+    onStop: (() -> Void)? = nil,
     onAddImage: ((Data, String) -> Void)? = nil,
     onRemoveImage: ((UUID) -> Void)? = nil,
   ) {
@@ -276,7 +300,10 @@ extension ChatInputField where Toolbar == EmptyView {
     self.placeholder = placeholder
     self.pendingImages = pendingImages
     self.isUploadingImages = isUploadingImages
+    self.isRunning = isRunning
+    self.isStopping = isStopping
     self.onSend = onSend
+    self.onStop = onStop
     self.onAddImage = onAddImage
     self.onRemoveImage = onRemoveImage
     toolbar = EmptyView()
