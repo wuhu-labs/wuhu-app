@@ -54,12 +54,14 @@ if [ ! -x "$SIGN_UPDATE" ]; then
   exit 1
 fi
 
-# Read version from project.yml
-MARKETING_VERSION=$(grep 'MARKETING_VERSION:' "$PROJECT_YML" | head -1 | sed 's/.*: *"\(.*\)"/\1/')
-BUILD_NUMBER=$(grep 'CURRENT_PROJECT_VERSION:' "$PROJECT_YML" | head -1 | sed 's/.*: *"\(.*\)"/\1/')
+# Read version from env vars (set by CI) or fall back to project.yml
+if [ -z "${MARKETING_VERSION:-}" ] || [ -z "${BUILD_NUMBER:-}" ]; then
+  MARKETING_VERSION=$(grep 'MARKETING_VERSION:' "$PROJECT_YML" | head -1 | sed 's/.*: *"\(.*\)"/\1/')
+  BUILD_NUMBER=$(grep 'CURRENT_PROJECT_VERSION:' "$PROJECT_YML" | head -1 | sed 's/.*: *"\(.*\)"/\1/')
+fi
 
 if [ -z "$MARKETING_VERSION" ] || [ -z "$BUILD_NUMBER" ]; then
-  echo "Error: Could not parse version from $PROJECT_YML"
+  echo "Error: Could not determine version. Set MARKETING_VERSION and BUILD_NUMBER env vars or check $PROJECT_YML"
   exit 1
 fi
 

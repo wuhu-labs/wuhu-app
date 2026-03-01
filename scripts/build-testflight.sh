@@ -14,6 +14,15 @@ ASC_KEY_ID="3U39ZA4G2A"
 ASC_ISSUER_ID="d782de6f-d166-4df4-8124-a96926af646b"
 ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
+# Version overrides (set by CI from git tag, optional for local builds)
+VERSION_OVERRIDES=()
+if [ -n "${MARKETING_VERSION:-}" ]; then
+    VERSION_OVERRIDES+=("MARKETING_VERSION=$MARKETING_VERSION")
+fi
+if [ -n "${BUILD_NUMBER:-}" ]; then
+    VERSION_OVERRIDES+=("CURRENT_PROJECT_VERSION=$BUILD_NUMBER")
+fi
+
 # Parse args
 SKIP_GEN=false
 NO_UPLOAD=false
@@ -51,7 +60,8 @@ xcodebuild archive \
     -archivePath "$BUILD_DIR/WuhuApp.xcarchive" \
     -quiet \
     CODE_SIGN_STYLE=Automatic \
-    DEVELOPMENT_TEAM=97W7A3Y9GD
+    DEVELOPMENT_TEAM=97W7A3Y9GD \
+    "${VERSION_OVERRIDES[@]}"
 
 # Step 4: Export IPA
 echo "📤 Exporting IPA..."
