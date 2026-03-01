@@ -45,7 +45,7 @@ MARKETING_VERSION: "1.0"        # User-facing version (e.g. 1.0, 1.1, 2.0)
 CURRENT_PROJECT_VERSION: "23"   # Monotonically increasing build number
 ```
 
-### Quick release (tag-triggered CI)
+### How to release
 
 1. Bump `CURRENT_PROJECT_VERSION` (and `MARKETING_VERSION` if needed) in
    `WuhuApp/project.yml`
@@ -59,16 +59,9 @@ CURRENT_PROJECT_VERSION: "23"   # Monotonically increasing build number
    - Builds, notarizes, and publishes the macOS app to R2
    - Builds and uploads the iOS app to TestFlight
 
-### Manual release
-
-```bash
-# macOS: build, notarize, publish
-./scripts/build-notarized-mac.sh --no-upload
-./scripts/publish-release.sh ./build-mac/Wuhu.zip
-
-# iOS: build and upload to TestFlight
-./scripts/build-testflight.sh
-```
+That's it. No manual script invocations needed. The individual scripts
+(`build-notarized-mac.sh`, `publish-release.sh`, `build-testflight.sh`) exist
+as building blocks called by CI — don't run them directly unless debugging.
 
 ### What gets published
 
