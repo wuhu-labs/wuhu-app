@@ -41,22 +41,27 @@ xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination
 Both macOS and iOS share version numbers in `WuhuApp/project.yml`:
 
 ```yaml
-MARKETING_VERSION: "1.0"        # User-facing version (e.g. 1.0, 1.1, 2.0)
-CURRENT_PROJECT_VERSION: "23"   # Monotonically increasing build number
+MARKETING_VERSION: "1.0.0"     # User-facing version (semver)
+CURRENT_PROJECT_VERSION: "26"  # Monotonically increasing build number
 ```
+
+These defaults are only used for **local dev builds** (⌘R in Xcode). CI
+derives the version entirely from the git tag.
 
 ### How to release
 
-Just tag and push. The version comes from the tag — no need to edit
-`project.yml`:
+Just tag and push:
 
 ```bash
-git tag v1.0.25
-git push origin v1.0.25
+git tag v1.0.0-27
+git push origin v1.0.0-27
 ```
 
-Tag format: **`v{MARKETING_VERSION}.{BUILD_NUMBER}`** (e.g. `v1.0.25`,
-`v1.1.30`, `v2.0.1`).
+Tag format: **`v{MARKETING_VERSION}-{BUILD_NUMBER}`**
+
+- Marketing version is standard semver: `1.0.0`, `1.0.1`, `1.1.0`, `2.0.0`
+- Build number is monotonically increasing (required by TestFlight)
+- The hyphen separates version from build — e.g. `v1.0.1-28`, `v1.1.0-29`
 
 The `release.yml` workflow parses the tag and passes the version to both
 build scripts as xcodebuild overrides:
@@ -66,6 +71,15 @@ build scripts as xcodebuild overrides:
 That's it. The individual scripts (`build-notarized-mac.sh`,
 `publish-release.sh`, `build-testflight.sh`) exist as building blocks called
 by CI — don't run them directly unless debugging.
+
+### Tag history
+
+| Tag | Marketing Version | Build | Notes |
+|-----|-------------------|-------|-------|
+| `v1.0-24` | — | — | Failed (old format) |
+| `v1.0.25` | 1.0 | 25 | Old dot-based format |
+| `v1.0.26` | 1.0 | 26 | Old dot-based format |
+| `v1.0.0-27` | 1.0.0 | 27 | ← next release (new hyphen format) |
 
 ### What gets published
 
