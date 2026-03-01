@@ -19,9 +19,12 @@ ASC_KEY_ID="3U39ZA4G2A"
 ASC_ISSUER_ID="d782de6f-d166-4df4-8124-a96926af646b"
 ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
+# The PRODUCT_NAME in project.yml is "Wuhu", so the .app is Wuhu.app
+APP_NAME="Wuhu"
+
 # Output
 ICLOUD_DESKTOP="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Desktop"
-OUTPUT_NAME="WuhuAppMac.zip"
+OUTPUT_NAME="${APP_NAME}.zip"
 
 # Parse args
 SKIP_GEN=false
@@ -35,6 +38,9 @@ done
 
 echo "🚀 Wuhu macOS Notarized Build"
 echo "=============================="
+
+# Step 0: Fetch Sparkle if needed
+"$SCRIPT_DIR/fetch-sparkle.sh"
 
 # Step 1: Generate Xcode project
 if [ "$SKIP_GEN" = false ]; then
@@ -57,7 +63,7 @@ xcodebuild archive \
     -project WuhuApp.xcodeproj \
     -scheme WuhuAppMac \
     -destination "generic/platform=macOS" \
-    -archivePath "$BUILD_DIR/WuhuAppMac.xcarchive" \
+    -archivePath "$BUILD_DIR/${APP_NAME}.xcarchive" \
     -quiet \
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
@@ -83,7 +89,7 @@ cat > "$BUILD_DIR/ExportOptions.plist" << EOF
 EOF
 
 xcodebuild -exportArchive \
-    -archivePath "$BUILD_DIR/WuhuAppMac.xcarchive" \
+    -archivePath "$BUILD_DIR/${APP_NAME}.xcarchive" \
     -exportPath "$BUILD_DIR/Export" \
     -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist" \
     -quiet \
@@ -95,11 +101,11 @@ xcodebuild -exportArchive \
 # Step 5: Create zip for notarization
 echo "📦 Creating zip for notarization..."
 cd "$BUILD_DIR/Export"
-/usr/bin/ditto -c -k --keepParent WuhuAppMac.app "$BUILD_DIR/WuhuAppMac-unsigned.zip"
+/usr/bin/ditto -c -k --keepParent "${APP_NAME}.app" "$BUILD_DIR/${APP_NAME}-unsigned.zip"
 
 # Step 6: Notarize
 echo "🔏 Submitting for notarization..."
-xcrun notarytool submit "$BUILD_DIR/WuhuAppMac-unsigned.zip" \
+xcrun notarytool submit "$BUILD_DIR/${APP_NAME}-unsigned.zip" \
     --key "$ASC_KEY_PATH" \
     --key-id "$ASC_KEY_ID" \
     --issuer "$ASC_ISSUER_ID" \
@@ -107,16 +113,16 @@ xcrun notarytool submit "$BUILD_DIR/WuhuAppMac-unsigned.zip" \
 
 # Step 7: Staple
 echo "📎 Stapling notarization ticket..."
-xcrun stapler staple "$BUILD_DIR/Export/WuhuAppMac.app"
+xcrun stapler staple "$BUILD_DIR/Export/${APP_NAME}.app"
 
 # Step 8: Verify
 echo "✅ Verifying notarization..."
-spctl --assess --type exec -vv "$BUILD_DIR/Export/WuhuAppMac.app" 2>&1
+spctl --assess --type exec -vv "$BUILD_DIR/Export/${APP_NAME}.app" 2>&1
 
 # Step 9: Create final zip with stapled ticket
 echo "📦 Creating final zip..."
 cd "$BUILD_DIR/Export"
-/usr/bin/ditto -c -k --keepParent WuhuAppMac.app "$BUILD_DIR/$OUTPUT_NAME"
+/usr/bin/ditto -c -k --keepParent "${APP_NAME}.app" "$BUILD_DIR/$OUTPUT_NAME"
 
 if [ "$NO_UPLOAD" = true ]; then
     echo "⏭️  Skipping iCloud copy (--no-upload)"

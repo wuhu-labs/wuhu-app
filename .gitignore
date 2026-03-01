@@ -26,6 +26,9 @@ WuhuApp/Sources/Info-macOS.plist
 # Build artifacts
 build-mac/
 
+# Sparkle xcframework (downloaded at build time, not committed)
+WuhuApp/Frameworks/
+
 # Sparkle tools (large binaries, not needed in repo)
 scripts/sign_update
 scripts/generate_keys
