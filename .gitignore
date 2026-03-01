@@ -22,3 +22,10 @@ WuhuApp/WuhuApp.xcodeproj
 # Generated Info.plist
 WuhuApp/Sources/Info.plist
 WuhuApp/Sources/Info-macOS.plist
+
+# Build artifacts
+build-mac/
+
+# Sparkle tools (large binaries, not needed in repo)
+scripts/sign_update
+scripts/generate_keys

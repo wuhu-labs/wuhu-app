@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release-mac:
+    name: Build & Publish macOS
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Xcode project
+        run: cd WuhuApp && xcodegen generate
+
+      - name: Build notarized macOS app
+        run: ./scripts/build-notarized-mac.sh --skip-gen --no-upload
+
+      - name: Publish to R2
+        run: ./scripts/publish-release.sh ./build-mac/WuhuAppMac.zip
+
+  release-ios:
+    name: Build & Upload to TestFlight
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate Xcode project
+        run: cd WuhuApp && xcodegen generate
+
+      - name: Build and upload to TestFlight
+        run: ./scripts/build-testflight.sh
