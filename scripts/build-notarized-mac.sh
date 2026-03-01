@@ -101,7 +101,7 @@ xcodebuild -exportArchive \
 # Step 5: Create zip for notarization
 echo "📦 Creating zip for notarization..."
 cd "$BUILD_DIR/Export"
-/usr/bin/ditto -c -k --keepParent "${APP_NAME}.app" "$BUILD_DIR/${APP_NAME}-unsigned.zip"
+/usr/bin/ditto -c -k --keepParent --norsrc "${APP_NAME}.app" "$BUILD_DIR/${APP_NAME}-unsigned.zip"
 
 # Step 6: Notarize
 echo "🔏 Submitting for notarization..."
@@ -122,7 +122,7 @@ spctl --assess --type exec -vv "$BUILD_DIR/Export/${APP_NAME}.app" 2>&1
 # Step 9: Create final zip with stapled ticket
 echo "📦 Creating final zip..."
 cd "$BUILD_DIR/Export"
-/usr/bin/ditto -c -k --keepParent "${APP_NAME}.app" "$BUILD_DIR/$OUTPUT_NAME"
+/usr/bin/ditto -c -k --keepParent --norsrc "${APP_NAME}.app" "$BUILD_DIR/$OUTPUT_NAME"
 
 if [ "$NO_UPLOAD" = true ]; then
     echo "⏭️  Skipping iCloud copy (--no-upload)"
