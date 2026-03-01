@@ -28,12 +28,35 @@ xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuAppMac -destinat
 xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination 'generic/platform=iOS' -quiet
 ```
 
-## TestFlight
+## Release
+
+Releases are **tag-driven**. Push a tag matching `v{VERSION}-{BUILD}` (e.g.
+`v1.0.1-1`) and the CI workflow (`.github/workflows/release.yml`) handles
+both the notarized macOS build and the TestFlight upload automatically.
 
 ```bash
-./scripts/build-testflight.sh
-./scripts/check-testflight.sh
+git tag v1.0.1-1
+git push origin v1.0.1-1
 ```
+
+The workflow parses the version and build number from the tag, so
+`MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` should
+already match before tagging.
+
+**Unless the user explicitly asks for a manual/local build**, "build",
+"release", "publish", or "upload" means pushing a new tag and letting CI
+handle it.
+
+### Manual builds (rare)
+
+Local build scripts exist for cases where CI is unavailable:
+
+- `./scripts/build-notarized-mac.sh` — macOS notarized build
+- `./scripts/build-testflight.sh` — iOS TestFlight upload
+- `./scripts/check-testflight.sh` — monitor TestFlight processing
+
+These are documented in the `macos-manual-build` and `testflight-manual-build`
+workspace skills. Only use them when explicitly asked.
 
 ## Collaboration
 
