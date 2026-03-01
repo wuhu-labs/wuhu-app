@@ -47,21 +47,25 @@ CURRENT_PROJECT_VERSION: "23"   # Monotonically increasing build number
 
 ### How to release
 
-1. Bump `CURRENT_PROJECT_VERSION` (and `MARKETING_VERSION` if needed) in
-   `WuhuApp/project.yml`
-2. Commit and push to `main` (via PR)
-3. Tag and push:
-   ```bash
-   git tag v1.0-24
-   git push origin v1.0-24
-   ```
-4. The `release.yml` workflow runs on the self-hosted runner and:
-   - Builds, notarizes, and publishes the macOS app to R2
-   - Builds and uploads the iOS app to TestFlight
+Just tag and push. The version comes from the tag — no need to edit
+`project.yml`:
 
-That's it. No manual script invocations needed. The individual scripts
-(`build-notarized-mac.sh`, `publish-release.sh`, `build-testflight.sh`) exist
-as building blocks called by CI — don't run them directly unless debugging.
+```bash
+git tag v1.0.25
+git push origin v1.0.25
+```
+
+Tag format: **`v{MARKETING_VERSION}.{BUILD_NUMBER}`** (e.g. `v1.0.25`,
+`v1.1.30`, `v2.0.1`).
+
+The `release.yml` workflow parses the tag and passes the version to both
+build scripts as xcodebuild overrides:
+- **macOS**: build → notarize → staple → sign with EdDSA → upload to R2 → update appcast
+- **iOS**: build → upload to TestFlight
+
+That's it. The individual scripts (`build-notarized-mac.sh`,
+`publish-release.sh`, `build-testflight.sh`) exist as building blocks called
+by CI — don't run them directly unless debugging.
 
 ### What gets published
 

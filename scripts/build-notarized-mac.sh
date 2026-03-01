@@ -26,6 +26,15 @@ APP_NAME="Wuhu"
 ICLOUD_DESKTOP="$HOME/Library/Mobile Documents/com~apple~CloudDocs/Desktop"
 OUTPUT_NAME="${APP_NAME}.zip"
 
+# Version overrides (set by CI from git tag, optional for local builds)
+VERSION_OVERRIDES=()
+if [ -n "${MARKETING_VERSION:-}" ]; then
+    VERSION_OVERRIDES+=("MARKETING_VERSION=$MARKETING_VERSION")
+fi
+if [ -n "${BUILD_NUMBER:-}" ]; then
+    VERSION_OVERRIDES+=("CURRENT_PROJECT_VERSION=$BUILD_NUMBER")
+fi
+
 # Parse args
 SKIP_GEN=false
 NO_UPLOAD=false
@@ -67,7 +76,8 @@ xcodebuild archive \
     -quiet \
     CODE_SIGN_STYLE=Manual \
     CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
-    DEVELOPMENT_TEAM="$TEAM_ID"
+    DEVELOPMENT_TEAM="$TEAM_ID" \
+    "${VERSION_OVERRIDES[@]}"
 
 # Step 4: Export
 echo "📤 Exporting app..."
