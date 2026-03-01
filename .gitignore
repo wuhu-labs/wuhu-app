@@ -29,3 +29,4 @@ build-mac/
 # Sparkle tools (large binaries, not needed in repo)
 scripts/sign_update
 scripts/generate_keys
+.wrangler/

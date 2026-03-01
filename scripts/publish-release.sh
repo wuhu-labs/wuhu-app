@@ -19,6 +19,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PROJECT_YML="$PROJECT_ROOT/WuhuApp/project.yml"
 
 # R2 config
+export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-476ba1878542c080b6bf4a771719d1fd}"
 BUCKET="wuhu-site"
 RELEASES_PREFIX="releases/macos"
 APPCAST_KEY="releases/appcast.xml"
