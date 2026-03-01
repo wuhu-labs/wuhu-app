@@ -4,17 +4,13 @@ import SwiftUI
 import WuhuAPI
 
 @Reducer
-struct CreateChannelFeature {
+struct CreateSessionFeature {
   @ObservableState
   struct State: Equatable {
-    var sessionType: WuhuSessionType = .channel
-    var environments: [WuhuEnvironmentDefinition] = []
-    var selectedEnvironment: String = ""
     var provider: WuhuProvider = .anthropic
-    var modelSelection: String = "claude-opus-4-6"
+    var modelSelection: String = ""
     var customModel: String = ""
     var reasoningEffort: ReasoningEffort?
-    var isLoading = false
     var isCreating = false
     var error: String?
 
@@ -31,10 +27,7 @@ struct CreateChannelFeature {
   }
 
   enum Action: BindableAction {
-    case onAppear
     case binding(BindingAction<State>)
-    case environmentsLoaded([WuhuEnvironmentDefinition])
-    case loadFailed(String)
     case createTapped
     case createResponse(WuhuSession)
     case createFailed(String)
@@ -54,41 +47,13 @@ struct CreateChannelFeature {
 
     Reduce { state, action in
       switch action {
-      case .onAppear:
-        state.isLoading = true
-        return .run { send in
-          let envs = try await apiClient.listEnvironments()
-          await send(.environmentsLoaded(envs))
-        } catch: { error, send in
-          await send(.loadFailed("\(error)"))
-        }
-
-      case let .environmentsLoaded(envs):
-        state.isLoading = false
-        state.environments = envs
-        if state.selectedEnvironment.isEmpty, let first = envs.first {
-          state.selectedEnvironment = first.name
-        }
-        return .none
-
-      case let .loadFailed(message):
-        state.isLoading = false
-        state.error = message
-        return .none
-
       case .createTapped:
-        guard !state.selectedEnvironment.isEmpty else {
-          state.error = "Select an environment."
-          return .none
-        }
         state.isCreating = true
         state.error = nil
         let request = WuhuCreateSessionRequest(
-          type: state.sessionType,
           provider: state.provider,
           model: state.resolvedModelID,
           reasoningEffort: state.reasoningEffort,
-          environment: state.selectedEnvironment,
         )
         return .run { send in
           let session = try await apiClient.createSession(request)
@@ -133,42 +98,19 @@ struct CreateChannelFeature {
 
 // MARK: - View
 
-struct CreateChannelView: View {
-  @Bindable var store: StoreOf<CreateChannelFeature>
+struct CreateSessionView: View {
+  @Bindable var store: StoreOf<CreateSessionFeature>
 
   var body: some View {
     NavigationStack {
       Form {
-        if store.isLoading {
-          Section {
-            ProgressView("Loading environments...")
-          }
-        } else if store.environments.isEmpty {
-          Section {
-            Text("No environments available.")
-              .foregroundStyle(.secondary)
-          }
-        } else {
-          Section("Environment") {
-            Picker(
-              "Environment",
-              selection: $store.selectedEnvironment,
-            ) {
-              ForEach(store.environments, id: \.name) { env in
-                Text(env.name).tag(env.name)
-              }
-            }
-            .labelsHidden()
-          }
-
-          Section("Model") {
-            ModelSelectionFields(
-              provider: $store.provider,
-              modelSelection: $store.modelSelection,
-              customModel: $store.customModel,
-              reasoningEffort: $store.reasoningEffort,
-            )
-          }
+        Section("Model") {
+          ModelSelectionFields(
+            provider: $store.provider,
+            modelSelection: $store.modelSelection,
+            customModel: $store.customModel,
+            reasoningEffort: $store.reasoningEffort,
+          )
         }
 
         if let error = store.error {
@@ -180,7 +122,7 @@ struct CreateChannelView: View {
         }
       }
       .formStyle(.grouped)
-      .navigationTitle(store.sessionType == .channel ? "New Channel" : "New Session")
+      .navigationTitle("New Session")
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Cancel") {
@@ -191,13 +133,12 @@ struct CreateChannelView: View {
           Button("Create") {
             store.send(.createTapped)
           }
-          .disabled(store.selectedEnvironment.isEmpty || store.isCreating)
+          .disabled(store.isCreating)
         }
       }
     }
     #if os(macOS)
     .frame(minWidth: 350, minHeight: 250)
     #endif
-    .task { store.send(.onAppear) }
   }
 }

@@ -8,7 +8,6 @@ struct MockSession: Identifiable, Equatable {
   var title: String
   /// When non-nil, this is a user-supplied title that should take priority over auto-derived titles.
   var customTitle: String?
-  var environmentName: String
   var model: String
   var status: SessionStatus
   var isArchived: Bool = false
@@ -82,30 +81,6 @@ struct MockToolCall: Identifiable, Equatable {
   var result: String
 }
 
-struct MockChannel: Identifiable, Equatable {
-  let id: String
-  var name: String
-  var unreadCount: Int
-  var messages: [MockChannelMessage]
-
-  var lastMessagePreview: String {
-    guard let m = messages.last else { return "" }
-    return "\(m.author): \(m.content.prefix(60))"
-  }
-
-  var lastMessageTimestamp: Date? {
-    messages.last?.timestamp
-  }
-}
-
-struct MockChannelMessage: Identifiable, Equatable {
-  let id: String
-  var author: String
-  var isAgent: Bool
-  var content: String
-  var timestamp: Date
-}
-
 struct MockIssue: Identifiable, Equatable {
   let id: String
   var title: String
@@ -148,7 +123,6 @@ enum MockData {
     MockSession(
       id: "s-001",
       title: "Fix auth token refresh",
-      environmentName: "wuhu-swift",
       model: "claude-sonnet-4-6",
       status: .running,
       updatedAt: Date().addingTimeInterval(-120),
@@ -157,7 +131,6 @@ enum MockData {
     MockSession(
       id: "s-002",
       title: "Add WebSocket reconnection logic",
-      environmentName: "wuhu-swift",
       model: "claude-opus-4-6",
       status: .running,
       updatedAt: Date().addingTimeInterval(-300),
@@ -166,7 +139,6 @@ enum MockData {
     MockSession(
       id: "s-003",
       title: "Refactor database migrations",
-      environmentName: "sandbox",
       model: "gpt-5",
       status: .idle,
       updatedAt: Date().addingTimeInterval(-43200),
@@ -178,7 +150,6 @@ enum MockData {
     MockSession(
       id: "s-004",
       title: "Debug CI pipeline failure",
-      environmentName: "wuhu-swift",
       model: "claude-sonnet-4-6",
       status: .stopped,
       updatedAt: Date().addingTimeInterval(-86400),
@@ -195,7 +166,6 @@ enum MockData {
     MockSession(
       id: "s-005",
       title: "Implement environment resolver",
-      environmentName: "sandbox",
       model: "claude-opus-4-6",
       status: .idle,
       updatedAt: Date().addingTimeInterval(-172_800),
@@ -207,7 +177,6 @@ enum MockData {
     MockSession(
       id: "s-006",
       title: "Write API documentation",
-      environmentName: "wuhu-swift",
       model: "gpt-5",
       status: .idle,
       updatedAt: Date().addingTimeInterval(-259_200),
@@ -216,7 +185,6 @@ enum MockData {
     MockSession(
       id: "s-007",
       title: "Optimize query performance",
-      environmentName: "wuhu-swift",
       model: "claude-haiku-4-5",
       status: .stopped,
       updatedAt: Date().addingTimeInterval(-345_600),
@@ -225,7 +193,6 @@ enum MockData {
     MockSession(
       id: "s-008",
       title: "Add runner health checks",
-      environmentName: "sandbox",
       model: "claude-sonnet-4-6",
       status: .idle,
       updatedAt: Date().addingTimeInterval(-432_000),
@@ -368,45 +335,6 @@ enum MockData {
     ),
   ]
 
-  // MARK: Channels
-
-  static let channels: IdentifiedArrayOf<MockChannel> = [
-    MockChannel(
-      id: "ch-general", name: "#general", unreadCount: 3,
-      messages: [
-        MockChannelMessage(id: "cm-1", author: "minsheng", isAgent: false, content: "Morning team. I'm starting on the auth refactor today.", timestamp: Date().addingTimeInterval(-28800)),
-        MockChannelMessage(id: "cm-2", author: "anna", isAgent: false, content: "Nice. I'll be on the WebSocket reconnect. Created a session for it already.", timestamp: Date().addingTimeInterval(-27000)),
-        MockChannelMessage(id: "cm-3", author: "yihan", isAgent: false, content: "Can someone review my PR for the migration refactor? It's #42.", timestamp: Date().addingTimeInterval(-14400)),
-        MockChannelMessage(id: "cm-4", author: "Wuhu Agent", isAgent: true, content: "I've reviewed PR #42. The migration looks correct but there's a potential data loss edge case in step 3 — the `ALTER TABLE` drops the old column before copying data. I'd suggest reordering to copy first, then drop.", timestamp: Date().addingTimeInterval(-13800)),
-        MockChannelMessage(id: "cm-5", author: "yihan", isAgent: false, content: "Good catch, fixing.", timestamp: Date().addingTimeInterval(-13200)),
-        MockChannelMessage(id: "cm-6", author: "kesou", isAgent: false, content: "Deployed v2.3 to staging. All green so far.", timestamp: Date().addingTimeInterval(-7200)),
-        MockChannelMessage(id: "cm-7", author: "minsheng", isAgent: false, content: "Auth fix is done and tested. Pushing to main now.", timestamp: Date().addingTimeInterval(-3600)),
-        MockChannelMessage(id: "cm-8", author: "Wuhu Agent", isAgent: true, content: "CI build #848 passed on main (3m 14s). All 147 tests green.", timestamp: Date().addingTimeInterval(-1800)),
-        MockChannelMessage(id: "cm-9", author: "anna", isAgent: false, content: "WebSocket reconnect is also merged. Good day.", timestamp: Date().addingTimeInterval(-600)),
-      ],
-    ),
-    MockChannel(
-      id: "ch-backend", name: "#backend", unreadCount: 0,
-      messages: [
-        MockChannelMessage(id: "cm-b1", author: "yihan", isAgent: false, content: "The sessions table migration is ready. I ran it against a copy of prod.", timestamp: Date().addingTimeInterval(-86400)),
-        MockChannelMessage(id: "cm-b2", author: "Wuhu Agent", isAgent: true, content: "Migration completed successfully. Schema is now at v5. I verified row counts match pre-migration: 12,847 sessions, 284,103 entries.", timestamp: Date().addingTimeInterval(-82800)),
-        MockChannelMessage(id: "cm-b3", author: "kesou", isAgent: false, content: "Nice. Can you also run the integrity check on the entries table?", timestamp: Date().addingTimeInterval(-79200)),
-        MockChannelMessage(id: "cm-b4", author: "Wuhu Agent", isAgent: true, content: "Integrity check passed. All foreign keys valid, no orphaned entries, parent chain is consistent for all 284,103 entries.", timestamp: Date().addingTimeInterval(-75600)),
-        MockChannelMessage(id: "cm-b5", author: "minsheng", isAgent: false, content: "Let's ship it. yihan can you do the prod migration during the maintenance window tonight?", timestamp: Date().addingTimeInterval(-72000)),
-        MockChannelMessage(id: "cm-b6", author: "yihan", isAgent: false, content: "On it.", timestamp: Date().addingTimeInterval(-68400)),
-      ],
-    ),
-    MockChannel(
-      id: "ch-deployments", name: "#deployments", unreadCount: 1,
-      messages: [
-        MockChannelMessage(id: "cm-d1", author: "Wuhu Agent", isAgent: true, content: "Build #846 failed (feat/websocket-reconnect, 1m 05s)\n\n2 test failures in `WebSocketTransportTests`.", timestamp: Date().addingTimeInterval(-172_800)),
-        MockChannelMessage(id: "cm-d2", author: "anna", isAgent: false, content: "I see the failures — the mock clock wasn't advancing properly. Fixing.", timestamp: Date().addingTimeInterval(-169_200)),
-        MockChannelMessage(id: "cm-d3", author: "Wuhu Agent", isAgent: true, content: "Build #847 succeeded (feat/websocket-reconnect, 2m 58s). All 142 tests passed.", timestamp: Date().addingTimeInterval(-162_000)),
-        MockChannelMessage(id: "cm-d4", author: "Wuhu Agent", isAgent: true, content: "Build #848 succeeded (main, 3m 14s). All 147 tests passed.", timestamp: Date().addingTimeInterval(-1800)),
-      ],
-    ),
-  ]
-
   // MARK: Issues
 
   static let issues: IdentifiedArrayOf<MockIssue> = [
@@ -495,8 +423,8 @@ enum MockData {
 
       ### Requirements
       - Token bucket algorithm, 100 requests/minute per API key
-      - Return `429 Too Many Requests` with `Retry-After` header
       - Store counters in Redis (or in-memory for single-node deploys)
+      - Return `429 Too Many Requests` with `Retry-After` header
       - Exempt internal service-to-service calls
 
       ### Open questions
@@ -654,8 +582,7 @@ enum MockData {
       ```json
       {
         "provider": "anthropic",
-        "model": "claude-sonnet-4-6",
-        "environment": "wuhu-swift"
+        "model": "claude-sonnet-4-6"
       }
       ```
 
@@ -684,15 +611,15 @@ enum MockData {
       - `idle` — Agent is waiting for input
       - `done` — Session processing complete
 
-      ## Environments
+      ## Mount Templates
 
-      ### `GET /environments`
+      ### `GET /mount-templates`
 
-      List all available environment definitions.
+      List all available mount templates.
 
-      ### `POST /environments`
+      ### `POST /mount-templates`
 
-      Create a new environment definition.
+      Create a new mount template.
       """,
     ),
     MockDoc(
@@ -725,7 +652,6 @@ enum MockData {
       You should see:
       ```
       [INFO] Server started on http://localhost:8080
-      [INFO] WebSocket endpoint: ws://localhost:8080/ws/runner
       ```
 
       ## Creating Your First Session
@@ -733,64 +659,57 @@ enum MockData {
       In another terminal:
 
       ```bash
-      swift run wuhu session new --env wuhu-swift --model claude-sonnet-4-6
+      swift run wuhu session new --model claude-sonnet-4-6
       ```
 
-      This creates a new coding session in the `wuhu-swift` environment using Claude Sonnet.
+      This creates a new coding session using Claude Sonnet.
 
       ## Next Steps
 
       - Read the **Architecture Overview** to understand the system design
       - Check the **API Reference** for programmatic access
-      - See **Runner Protocol** for custom tool execution
       """,
     ),
     MockDoc(
-      id: "doc-4", title: "Runner Protocol",
-      tags: ["protocol", "runner"],
+      id: "doc-4", title: "Mount Templates",
+      tags: ["mounts", "configuration"],
       updatedAt: Date().addingTimeInterval(-345_600),
       markdownContent: """
-      # Runner Protocol
+      # Mount Templates
 
-      Runners communicate with the server via **WebSocket** using a JSON protocol.
+      Mount templates define how sessions get access to filesystem directories.
 
-      ## Connection
+      ## Template Types
 
-      ```
-      ws://localhost:8080/ws/runner
-      ```
+      ### `folder`
+      Creates an isolated workspace copy from a template directory for each session.
 
-      ## Message Types
+      ## Configuration
 
-      ### `hello`
-      Runner announces itself on connection.
-
-      ```json
-      {"type": "hello", "runnerName": "local-runner", "version": 1}
-      ```
-
-      ### `registerSession`
-      Server assigns a session to this runner.
-
-      ### `toolRequest` / `toolResponse`
-      Tool execution lifecycle.
+      Mount templates are managed via the API:
 
       ```json
       {
-        "type": "toolRequest",
-        "id": "req-001",
-        "sessionID": "s-001",
-        "toolName": "bash",
-        "arguments": {"command": "swift test"}
+        "name": "wuhu-swift",
+        "type": "folder",
+        "templatePath": "/path/to/template",
+        "workspacesPath": "/path/to/workspaces"
       }
       ```
 
-      ## Lifecycle
+      ## Usage
 
-      1. Runner connects and sends `hello`
-      2. Server sends `registerSession` when a session needs tool execution
-      3. Tool calls flow as `toolRequest` → runner executes → `toolResponse`
-      4. Runner can handle multiple sessions concurrently
+      When creating a session, specify a mount template:
+
+      ```json
+      {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-6",
+        "mountTemplate": "wuhu-swift"
+      }
+      ```
+
+      The server will create a workspace copy and bind it to the session.
       """,
     ),
   ]

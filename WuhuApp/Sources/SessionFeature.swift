@@ -202,7 +202,6 @@ struct SessionFeature {
 
       case let .sessionInfoLoaded(response):
         state.isLoadingDetail = false
-        state.displayStartEntryID = response.session.displayStartEntryID
 
         // Update session in the list with messages from the REST response
         // (subscription will take over after this)
@@ -1001,9 +1000,6 @@ struct SessionThreadView: View {
           }
           .foregroundStyle(.orange)
         }
-        Text(session.environmentName)
-          .font(.caption)
-          .foregroundStyle(.secondary)
         Text(session.model)
           .font(.caption)
           .padding(.horizontal, 8)
