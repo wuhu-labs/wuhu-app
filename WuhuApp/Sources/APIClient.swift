@@ -12,7 +12,6 @@ struct APIClient: Sendable {
   var listSessions: @Sendable (_ includeArchived: Bool) async throws -> [WuhuSession]
   var getSession: @Sendable (_ id: String) async throws -> WuhuGetSessionResponse
   var createSession: @Sendable (_ request: WuhuCreateSessionRequest) async throws -> WuhuSession
-  var listEnvironments: @Sendable () async throws -> [WuhuEnvironmentDefinition]
   var listWorkspaceDocs: @Sendable () async throws -> [WuhuWorkspaceDocSummary]
   var readWorkspaceDoc: @Sendable (_ path: String) async throws -> WuhuWorkspaceDoc
   var enqueue: @Sendable (_ sessionID: String, _ content: MessageContent, _ user: String?, _ lane: UserQueueLane) async throws -> String
@@ -89,7 +88,6 @@ extension APIClient: DependencyKey {
       listSessions: { try await makeClient().listSessions(includeArchived: $0) },
       getSession: { try await makeClient().getSession(id: $0) },
       createSession: { try await makeClient().createSession($0) },
-      listEnvironments: { try await makeClient().listEnvironments() },
       listWorkspaceDocs: { try await makeClient().listWorkspaceDocs() },
       readWorkspaceDoc: { try await makeClient().readWorkspaceDoc(path: $0) },
       enqueue: { sessionID, content, user, lane in
@@ -124,9 +122,6 @@ extension APIClient: DependencyKey {
           id: "preview",
           provider: .anthropic,
           model: "claude-sonnet-4-6",
-          environment: WuhuEnvironment(name: "preview", type: .local, path: "/tmp"),
-          cwd: "/tmp",
-          parentSessionID: nil,
           createdAt: Date(),
           updatedAt: Date(),
           headEntryID: 0,
@@ -140,16 +135,12 @@ extension APIClient: DependencyKey {
         id: "preview",
         provider: .anthropic,
         model: "claude-sonnet-4-6",
-        environment: WuhuEnvironment(name: "preview", type: .local, path: "/tmp"),
-        cwd: "/tmp",
-        parentSessionID: nil,
         createdAt: Date(),
         updatedAt: Date(),
         headEntryID: 0,
         tailEntryID: 0,
       )
     },
-    listEnvironments: { [] },
     listWorkspaceDocs: { [] },
     readWorkspaceDoc: { _ in WuhuWorkspaceDoc(path: "", frontmatter: [:], body: "") },
     enqueue: { _, _, _, _ in "" },
@@ -159,9 +150,6 @@ extension APIClient: DependencyKey {
         id: "preview",
         provider: .anthropic,
         model: "claude-sonnet-4-6",
-        environment: WuhuEnvironment(name: "preview", type: .local, path: "/tmp"),
-        cwd: "/tmp",
-        parentSessionID: nil,
         createdAt: Date(),
         updatedAt: Date(),
         headEntryID: 0,
@@ -173,9 +161,6 @@ extension APIClient: DependencyKey {
         id: "preview",
         provider: .anthropic,
         model: "claude-sonnet-4-6",
-        environment: WuhuEnvironment(name: "preview", type: .local, path: "/tmp"),
-        cwd: "/tmp",
-        parentSessionID: nil,
         isArchived: true,
         createdAt: Date(),
         updatedAt: Date(),
@@ -188,9 +173,6 @@ extension APIClient: DependencyKey {
         id: "preview",
         provider: .anthropic,
         model: "claude-sonnet-4-6",
-        environment: WuhuEnvironment(name: "preview", type: .local, path: "/tmp"),
-        cwd: "/tmp",
-        parentSessionID: nil,
         createdAt: Date(),
         updatedAt: Date(),
         headEntryID: 0,
@@ -204,9 +186,6 @@ extension APIClient: DependencyKey {
           id: "preview",
           provider: .anthropic,
           model: "claude-sonnet-4-6",
-          environment: WuhuEnvironment(name: "preview", type: .local, path: "/tmp"),
-          cwd: "/tmp",
-          parentSessionID: nil,
           createdAt: Date(),
           updatedAt: Date(),
           headEntryID: 0,
@@ -337,48 +316,6 @@ enum TranscriptConverter {
     return messages
   }
 
-  static func convertToChannelMessages(
-    _ entries: [WuhuSessionEntry],
-    displayStartEntryID: Int64? = nil,
-  ) -> [MockChannelMessage] {
-    let visibleEntries: [WuhuSessionEntry] = if let start = displayStartEntryID {
-      entries.filter { $0.id >= start }
-    } else {
-      entries
-    }
-    var messages: [MockChannelMessage] = []
-    for entry in visibleEntries {
-      guard case let .message(msg) = entry.payload else { continue }
-      switch msg {
-      case let .user(userMsg):
-        let text = extractText(from: userMsg.content)
-        guard !text.isEmpty else { continue }
-        messages.append(MockChannelMessage(
-          id: "entry-\(entry.id)",
-          author: userMsg.user == WuhuUserMessage.unknownUser ? "User" : userMsg.user,
-          isAgent: false,
-          content: text,
-          timestamp: userMsg.timestamp,
-        ))
-
-      case let .assistant(assistantMsg):
-        let text = extractText(from: assistantMsg.content)
-        guard !text.isEmpty else { continue }
-        messages.append(MockChannelMessage(
-          id: "entry-\(entry.id)",
-          author: "Wuhu Agent",
-          isAgent: true,
-          content: text,
-          timestamp: assistantMsg.timestamp,
-        ))
-
-      case .toolResult, .customMessage, .unknown:
-        break
-      }
-    }
-    return messages
-  }
-
   static func deriveSessionTitle(from entries: [WuhuSessionEntry]) -> String? {
     for entry in entries {
       if case let .message(.user(userMsg)) = entry.payload {
@@ -458,12 +395,11 @@ extension MockSession {
     }
     let displayTitle = session.customTitle
       ?? TranscriptConverter.deriveSessionTitle(from: [])
-      ?? session.environment.name + " session"
+      ?? "Untitled"
     return MockSession(
       id: session.id,
       title: displayTitle,
       customTitle: session.customTitle,
-      environmentName: session.environment.name,
       model: session.model,
       status: status,
       isArchived: session.isArchived,
@@ -476,51 +412,22 @@ extension MockSession {
   static func from(_ response: WuhuGetSessionResponse) -> MockSession {
     let messages = TranscriptConverter.convertTranscript(
       response.transcript,
-      displayStartEntryID: response.session.displayStartEntryID,
+      displayStartEntryID: nil,
     )
     let displayTitle = response.session.customTitle
       ?? TranscriptConverter.deriveSessionTitle(from: response.transcript)
-      ?? response.session.environment.name + " session"
+      ?? "Untitled"
     let status = TranscriptConverter.sessionStatus(from: response)
 
     return MockSession(
       id: response.session.id,
       title: displayTitle,
       customTitle: response.session.customTitle,
-      environmentName: response.session.environment.name,
       model: response.session.model,
       status: status,
       isArchived: response.session.isArchived,
       parentSessionID: response.session.parentSessionID,
       updatedAt: response.session.updatedAt,
-      messages: messages,
-    )
-  }
-}
-
-// MARK: - Channel Conversion
-
-extension MockChannel {
-  static func from(_ session: WuhuSession, messages: [MockChannelMessage] = []) -> MockChannel {
-    let name = "#\(session.environment.name)"
-    return MockChannel(
-      id: session.id,
-      name: name,
-      unreadCount: 0,
-      messages: messages,
-    )
-  }
-
-  static func from(_ response: WuhuGetSessionResponse) -> MockChannel {
-    let messages = TranscriptConverter.convertToChannelMessages(
-      response.transcript,
-      displayStartEntryID: response.session.displayStartEntryID,
-    )
-    let name = "#\(response.session.environment.name)"
-    return MockChannel(
-      id: response.session.id,
-      name: name,
-      unreadCount: 0,
       messages: messages,
     )
   }
