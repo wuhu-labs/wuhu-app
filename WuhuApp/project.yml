@@ -40,6 +40,7 @@ targets:
         excludes:
           - Info-macOS.plist
           - WuhuAppMac.entitlements
+          - Updater.swift
     info:
       path: Sources/Info.plist
       properties:
@@ -108,6 +109,8 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         NSMainStoryboardFile: ""
         LSApplicationCategoryType: public.app-category.developer-tools
+        SUFeedURL: "https://wuhu.ai/releases/appcast.xml"
+        SUPublicEDKey: "cLD5wooImNT4Loh8TXGByHrSKnKtzU5T4As3L5L5BA4="
     entitlements:
       path: Sources/WuhuAppMac.entitlements
       properties:
@@ -140,3 +143,5 @@ targets:
         product: CasePaths
       - package: MarkdownUI
         product: MarkdownUI
+      - framework: Frameworks/Sparkle.xcframework
+        embed: true

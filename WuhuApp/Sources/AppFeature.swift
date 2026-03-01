@@ -1005,6 +1005,10 @@ struct AppView: View {
 
 @main
 struct WuhuApp: App {
+  #if os(macOS)
+  @StateObject private var updater = SoftwareUpdater()
+  #endif
+
   var body: some Scene {
     WindowGroup {
       AppView(
@@ -1016,6 +1020,9 @@ struct WuhuApp: App {
     #if os(macOS)
     .windowStyle(.automatic)
     .defaultSize(width: 1200, height: 750)
+    .commands {
+      CheckForUpdatesCommand(updater: updater)
+    }
     #endif
 
     #if os(macOS)
