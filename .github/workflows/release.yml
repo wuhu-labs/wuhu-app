@@ -13,6 +13,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fetch Sparkle
+        run: ./scripts/fetch-sparkle.sh
+
       - name: Generate Xcode project
         run: cd WuhuApp && xcodegen generate
 
@@ -20,7 +23,7 @@ jobs:
         run: ./scripts/build-notarized-mac.sh --skip-gen --no-upload
 
       - name: Publish to R2
-        run: ./scripts/publish-release.sh ./build-mac/WuhuAppMac.zip
+        run: ./scripts/publish-release.sh ./build-mac/Wuhu.zip
 
   release-ios:
     name: Build & Upload to TestFlight
@@ -28,6 +31,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Fetch Sparkle
+        run: ./scripts/fetch-sparkle.sh
 
       - name: Generate Xcode project
         run: cd WuhuApp && xcodegen generate

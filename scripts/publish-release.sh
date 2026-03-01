@@ -33,7 +33,7 @@ if [ $# -lt 1 ]; then
   echo "Usage: $0 <zip-path>"
   echo ""
   echo "Example:"
-  echo "  $0 ./build-mac/WuhuAppMac.zip"
+  echo "  $0 ./build-mac/Wuhu.zip"
   exit 1
 fi
 
@@ -63,7 +63,7 @@ if [ -z "$MARKETING_VERSION" ] || [ -z "$BUILD_NUMBER" ]; then
   exit 1
 fi
 
-DEST_NAME="WuhuAppMac-${MARKETING_VERSION}-${BUILD_NUMBER}.zip"
+DEST_NAME="Wuhu-${MARKETING_VERSION}-${BUILD_NUMBER}.zip"
 FILE_SIZE=$(stat -f%z "$ZIP_PATH")
 PUB_DATE=$(date -R)
 
@@ -85,7 +85,7 @@ wrangler r2 object put "$BUCKET/$RELEASES_PREFIX/$DEST_NAME" \
     --remote 2>&1 | tail -1
 
 # Also upload as "latest" for the download page
-wrangler r2 object put "$BUCKET/$RELEASES_PREFIX/WuhuAppMac-latest.zip" \
+wrangler r2 object put "$BUCKET/$RELEASES_PREFIX/Wuhu-latest.zip" \
     --file="$ZIP_PATH" \
     --content-type="application/zip" \
     --remote 2>&1 | tail -1
@@ -129,5 +129,5 @@ rm -f "$APPCAST_TMP"
 echo ""
 echo "✅ Published Wuhu macOS v${MARKETING_VERSION} (build ${BUILD_NUMBER})"
 echo "   Download: https://wuhu.ai/$RELEASES_PREFIX/$DEST_NAME"
-echo "   Latest:   https://wuhu.ai/$RELEASES_PREFIX/WuhuAppMac-latest.zip"
+echo "   Latest:   https://wuhu.ai/$RELEASES_PREFIX/Wuhu-latest.zip"
 echo "   Appcast:  https://wuhu.ai/$APPCAST_KEY"
