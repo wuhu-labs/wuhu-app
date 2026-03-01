@@ -25,7 +25,7 @@ struct AppFeature {
     var workspaceName = "Wuhu"
     var isLoading = false
     var hasLoaded = false
-    @Presents var createSession: CreateSessionFeature.State?
+    var isCreatingSession = false
 
     // Workspace state
     var workspaces: [Workspace] = []
@@ -48,7 +48,8 @@ struct AppFeature {
       issues: IdentifiedArrayOf<MockIssue>,
     )
     case createSessionTapped
-    case createSession(PresentationAction<CreateSessionFeature.Action>)
+    case sessionCreated(WuhuSession)
+    case sessionCreateFailed(String)
     case docs(DocsFeature.Action)
     case issues(IssuesFeature.Action)
     case selectionChanged(SidebarSelection?)
@@ -246,22 +247,25 @@ struct AppFeature {
         return .none
 
       case .createSessionTapped:
-        state.createSession = CreateSessionFeature.State()
-        return .none
+        guard !state.isCreatingSession else { return .none }
+        state.isCreatingSession = true
+        let request = WuhuCreateSessionRequest(provider: .anthropic)
+        return .run { send in
+          let session = try await apiClient.createSession(request)
+          await send(.sessionCreated(session))
+        } catch: { _, send in
+          await send(.sessionCreateFailed("Failed to create session"))
+        }
 
-      case let .createSession(.presented(.delegate(.created(session)))):
-        state.createSession = nil
+      case let .sessionCreated(session):
+        state.isCreatingSession = false
         let mockSession = MockSession.from(session)
         state.sessions.sessions.insert(mockSession, at: 0)
         state.selection = .sessions
-        // Dispatch the action so SessionFeature starts the subscription
         return .send(.sessions(.sessionSelected(mockSession.id)))
 
-      case .createSession(.presented(.delegate(.cancelled))):
-        state.createSession = nil
-        return .none
-
-      case .createSession:
+      case .sessionCreateFailed:
+        state.isCreatingSession = false
         return .none
 
       // MARK: - Workspace
@@ -361,9 +365,7 @@ struct AppFeature {
         return .none
       }
     }
-    .ifLet(\.$createSession, action: \.createSession) {
-      CreateSessionFeature()
-    }
+
   }
 
   private func refreshTimerEffect() -> Effect<Action> {
@@ -395,9 +397,6 @@ struct AppView: View {
       .frame(minWidth: 900, minHeight: 600)
     #endif
       .task { store.send(.onAppear) }
-      .sheet(item: $store.scope(state: \.createSession, action: \.createSession)) { store in
-        CreateSessionView(store: store)
-      }
     #if os(iOS)
       .sheet(isPresented: $isShowingSettings) {
         NavigationStack {
