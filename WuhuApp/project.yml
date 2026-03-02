@@ -30,6 +30,12 @@ packages:
   MarkdownUI:
     url: https://github.com/gonzalezreal/swift-markdown-ui
     from: 2.4.0
+  Inject:
+    url: https://github.com/krzysztofzablocki/Inject
+    from: 1.5.2
+  InjectionNext:
+    url: https://github.com/johnno1962/InjectionNext
+    from: 1.5.2
 
 targets:
   WuhuApp:
@@ -150,3 +156,33 @@ targets:
         product: MarkdownUI
       - framework: Frameworks/Sparkle.xcframework
         embed: true
+
+  WuhuPreview:
+    type: application
+    platform: iOS
+    sources:
+      - path: WuhuPreview
+    info:
+      path: WuhuPreview/Info.plist
+      properties:
+        CFBundleDisplayName: WuhuPreview
+        UILaunchScreen: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ms.liu.wuhu.preview
+        IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+        SWIFT_VERSION: "6.0"
+        EMIT_FRONTEND_COMMAND_LINES: YES
+      configs:
+        debug:
+          OTHER_LDFLAGS: ["-Xlinker", "-interposable"]
+    scheme:
+      environmentVariables:
+        - variable: INJECTION_PROJECT_ROOT
+          value: $(SRCROOT)
+          isEnabled: true
+    dependencies:
+      - package: Inject
+        product: Inject
+      - package: InjectionNext
+        product: InjectionNext
