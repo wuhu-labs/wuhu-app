@@ -42,17 +42,29 @@ xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination
 ## Release
 
 Releases are **tag-driven**. Push a tag matching `v{VERSION}-{BUILD}` (e.g.
-`v1.0.1-1`) and the CI workflow (`.github/workflows/release.yml`) handles
+`v1.0.1-31`) and the CI workflow (`.github/workflows/release.yml`) handles
 both the notarized macOS build and the TestFlight upload automatically.
 
 ```bash
-git tag v1.0.1-1
-git push origin v1.0.1-1
+git tag v1.0.1-31
+git push origin v1.0.1-31
 ```
 
-The workflow parses the version and build number from the tag, so
-`MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` should
-already match before tagging.
+The CI workflow **parses the version and build number exclusively from the
+tag** and injects them into the build at compile time. You do **not** need to
+update `MARKETING_VERSION` or `CURRENT_PROJECT_VERSION` in `project.yml` —
+just push the tag and CI handles the rest.
+
+### Build numbering
+
+The build number (`CURRENT_PROJECT_VERSION` / `CFBundleVersion`) is
+**monotonically increasing across all versions**. This is required by
+[Sparkle](https://github.com/sparkle-project/Sparkle) — it compares build
+numbers numerically to decide whether an update is available, regardless of
+the marketing version string. When bumping the marketing version, continue
+the build number sequence from the previous release rather than resetting
+to 1. Check existing tags (`git tag --sort=-v:refname`) to find the next
+build number.
 
 **Unless the user explicitly asks for a manual/local build**, "build",
 "release", "publish", or "upload" means pushing a new tag and letting CI
