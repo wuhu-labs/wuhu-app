@@ -19,7 +19,6 @@ struct WuhuApp: App {
     }
     #if os(macOS)
     .windowStyle(.hiddenTitleBar)
-    .windowToolbarStyle(.unified(showsTitle: false))
     .defaultSize(width: 1200, height: 750)
     .commands {
       CheckForUpdatesCommand(updater: updater)

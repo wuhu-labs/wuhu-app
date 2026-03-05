@@ -22,16 +22,32 @@ struct AppView: View {
 
 #if os(macOS)
   extension AppView {
+
+    /// The panel inset from the window edge. The window corner radius on
+    /// macOS 26 Tahoe is 10pt — panels sit `panelInset` inside the window
+    /// so a concentric inner radius = windowRadius − panelInset.
+    private var panelInset: CGFloat { 6 }
+    private var panelCornerRadius: CGFloat { 10 }
+
     var macOSBody: some View {
       HStack(spacing: 0) {
-        // Column 1: Sidebar (transparent, part of the window)
+        // Column 1: Sidebar — no background, part of the window chrome
         sidebarColumn
           .frame(width: 200)
 
-        // Columns 2 & 3: Floating content area
-        floatingContentArea
+        // Column 2: Secondary sidebar — its own island
+        if store.isSecondPanelVisible {
+          secondaryPanel
+            .frame(width: 280)
+            .transition(.move(edge: .leading).combined(with: .opacity))
+        }
+
+        // Column 3: Primary content — its own island, fills to window edge
+        primaryContentPanel
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
       .frame(minWidth: 900, minHeight: 600)
+      .ignoresSafeArea()
       .background(WindowBackgroundView())
       .task { store.send(.onAppear) }
       .alert("Not Implemented", isPresented: $store.isShowingAddFolderAlert) {
@@ -41,7 +57,7 @@ struct AppView: View {
       }
     }
 
-    // MARK: - Sidebar Column (Column 1)
+    // MARK: - Sidebar Column (Column 1 — transparent)
 
     private var sidebarColumn: some View {
       VStack(spacing: 0) {
@@ -121,7 +137,6 @@ struct AppView: View {
 
     private var sessionsSection: some View {
       VStack(spacing: 0) {
-        // Section header
         Button {
           _ = withAnimation(.easeInOut(duration: 0.2)) {
             store.send(.toggleSessionsSection)
@@ -143,7 +158,6 @@ struct AppView: View {
         .buttonStyle(.plain)
 
         if !store.isSessionsSectionCollapsed {
-          // Inbox
           sidebarSessionItem(
             "Inbox",
             icon: "tray",
@@ -153,7 +167,6 @@ struct AppView: View {
             store.send(.sidebarSelectionChanged(.inbox))
           }
 
-          // Add Folder button
           Button {
             store.send(.addFolderTapped)
           } label: {
@@ -243,33 +256,7 @@ struct AppView: View {
       .padding(.vertical, 10)
     }
 
-    // MARK: - Floating Content Area (Columns 2 & 3)
-
-    private var floatingContentArea: some View {
-      HStack(spacing: 1) {
-        // Column 2: Secondary panel (session list / doc tree / chat list)
-        if store.isSecondPanelVisible {
-          secondaryPanel
-            .frame(width: 280)
-            .transition(.move(edge: .leading).combined(with: .opacity))
-        }
-
-        // Column 3: Primary content (session detail / doc viewer / chat)
-        primaryContentPanel
-          .frame(maxWidth: .infinity)
-      }
-      .padding(6)
-      .background(
-        RoundedRectangle(cornerRadius: 10)
-          .fill(.ultraThinMaterial)
-          .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
-      )
-      .padding(.top, 6)
-      .padding(.trailing, 6)
-      .padding(.bottom, 6)
-    }
-
-    // MARK: - Secondary Panel (Column 2)
+    // MARK: - Secondary Panel (Column 2 — its own island)
 
     @ViewBuilder
     private var secondaryPanel: some View {
@@ -297,14 +284,12 @@ struct AppView: View {
 
         Divider()
 
-        // Content based on sidebar selection
         secondaryPanelContent
       }
-      .background(
-        RoundedRectangle(cornerRadius: 8)
-          .fill(Color(nsColor: .controlBackgroundColor.withAlphaComponent(0.5)))
-      )
-      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .background(Color(nsColor: .windowBackgroundColor))
+      .clipShape(RoundedRectangle(cornerRadius: panelCornerRadius))
+      .padding(.leading, panelInset)
+      .padding(.vertical, panelInset)
     }
 
     private var secondaryPanelTitle: String {
@@ -320,9 +305,9 @@ struct AppView: View {
     private var secondaryPanelContent: some View {
       switch store.sidebarSelection {
       case .tab(.docs):
-        docsTreePanel
+        DocsTreePanelView(store: store.scope(state: \.docs, action: \.docs))
       case .tab(.messages):
-        messagesListPanel
+        MessagesListPanelView(store: store.scope(state: \.messages, action: \.messages))
       case .inbox:
         SessionListView(
           store: store.scope(state: \.sessions, action: \.sessions),
@@ -333,32 +318,16 @@ struct AppView: View {
       }
     }
 
-    // MARK: Docs Tree Panel
-
-    private var docsTreePanel: some View {
-      let docsStore = store.scope(state: \.docs, action: \.docs)
-      return DocsTreePanelView(store: docsStore)
-    }
-
-    // MARK: Messages List Panel
-
-    private var messagesListPanel: some View {
-      MessagesListPanelView(store: store.scope(state: \.messages, action: \.messages))
-    }
-
-    // MARK: - Primary Content Panel (Column 3)
+    // MARK: - Primary Content Panel (Column 3 — its own island, flush right)
 
     @ViewBuilder
     private var primaryContentPanel: some View {
       Group {
         if store.sessions.selectedSessionID != nil {
-          // A session is selected — show its detail regardless of sidebar state
           SessionDetailView(store: store.scope(state: \.sessions, action: \.sessions))
         } else if store.docs.selectedDoc != nil {
-          // A doc is selected from the docs tree
           DocsDetailView(store: store.scope(state: \.docs, action: \.docs))
         } else if let channel = store.messages.selectedChannel {
-          // A message channel is selected — show placeholder chat
           messageChatPlaceholder(channel)
         } else {
           ContentUnavailableView(
@@ -366,14 +335,27 @@ struct AppView: View {
             systemImage: "sparkles",
             description: Text("Select a session, document, or conversation to get started")
           )
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
       }
-      .clipShape(RoundedRectangle(cornerRadius: 8))
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .background(Color(nsColor: .windowBackgroundColor))
+      .clipShape(
+        // Left corners rounded, right corners square (flush with window edge).
+        // The window itself rounds the right corners on macOS 26.
+        UnevenRoundedRectangle(
+          topLeadingRadius: panelCornerRadius,
+          bottomLeadingRadius: panelCornerRadius,
+          bottomTrailingRadius: 0,
+          topTrailingRadius: 0
+        )
+      )
+      .padding(.leading, panelInset)
+      .padding(.vertical, panelInset)
     }
 
     private func messageChatPlaceholder(_ channel: MockChannel) -> some View {
       VStack(spacing: 0) {
-        // Chat header
         HStack(spacing: 10) {
           Text(channel.avatarEmoji)
             .font(.title2)
@@ -394,7 +376,6 @@ struct AppView: View {
 
         Divider()
 
-        // Placeholder content
         Spacer()
         VStack(spacing: 8) {
           Text(channel.avatarEmoji)
@@ -451,10 +432,10 @@ struct AppView: View {
     }
   }
 
-  // MARK: - Window Background Helper
+  // MARK: - Window Background
 
-  /// Renders the window's background as transparent so the sidebar blends
-  /// with the window chrome like Arc's sidebar.
+  /// Full-window vibrancy behind the sidebar. The panel islands sit on top
+  /// with their own opaque backgrounds.
   struct WindowBackgroundView: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
       let view = NSVisualEffectView()
