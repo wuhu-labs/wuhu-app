@@ -165,6 +165,7 @@ targets:
           - WuhuApp.swift
           - Updater.swift
     info:
+      path: ShellApp/Info.plist
       properties:
         CFBundleDisplayName: WuhuShell
         CFBundleIconName: AppIcon
