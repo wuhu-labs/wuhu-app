@@ -51,11 +51,20 @@ enum PanelMetrics {
   static let sidebarWidth: CGFloat = 200
   /// Width of the secondary (list) panel.
   static let secondaryWidth: CGFloat = 280
-  /// How far down from the window top the traffic lights sit.
-  /// This leaves room for the navigation row (sidebar toggle, back/forward).
-  static let trafficLightInset: CGFloat = 14
-  /// Height of the navigation row above the sidebar content.
-  static let navRowHeight: CGFloat = 38
+
+  // ── Titlebar / Nav Row ──────────────────────────────────────
+  // The AppDelegate uses an empty NSToolbar with .unified style,
+  // which creates a ~52pt titlebar. The traffic lights auto-center
+  // in this taller titlebar. The nav row (sidebar toggle, back/forward)
+  // sits in the same vertical strip via the safeAreaInset or top
+  // padding. These values may need tuning after checking the actual
+  // titlebar height printed by AppDelegate's debug output.
+
+  /// Height of the titlebar area created by the .unified toolbar.
+  /// Actual value printed by AppDelegate — update if it differs.
+  static let titlebarHeight: CGFloat = 52
+  /// Height of the navigation row. Should match or sit within the titlebar.
+  static let navRowHeight: CGFloat = 52
 }
 
 // MARK: - Mac App Shell
