@@ -18,6 +18,7 @@ struct WuhuApp: App {
       )
     }
     #if os(macOS)
+    // No title bar, no toolbar — we own the entire window chrome.
     .windowStyle(.hiddenTitleBar)
     .defaultSize(width: 1200, height: 750)
     .commands {

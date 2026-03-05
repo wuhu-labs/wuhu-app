@@ -37,8 +37,12 @@ struct SessionListView: View {
           }
       }
     }
+    #if os(macOS)
+    .listStyle(.sidebar)
+    #else
     .listStyle(.inset)
     .navigationTitle("Sessions")
+    #endif
     #if os(iOS)
     .toolbar {
       ToolbarItem(placement: .automatic) {

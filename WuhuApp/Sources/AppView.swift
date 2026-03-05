@@ -11,457 +11,514 @@ struct AppView: View {
 
   var body: some View {
     #if os(macOS)
-      macOSBody
+      MacAppShell(store: store)
     #else
       iOSBody
     #endif
   }
 }
 
-// MARK: - macOS: Arc-style Tri-Panel Layout
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  macOS — Arc-style tri-panel shell                              ║
+// ║                                                                 ║
+// ║  ┌─────────┬────────────┬──────────────────────────────────┐    ║
+// ║  │ traffic │            │                                  │    ║
+// ║  │ lights  │            │                                  │    ║
+// ║  │ ← → ↻   │            │                                  │    ║
+// ║  │         │  Secondary │         Primary Content          │    ║
+// ║  │ Sidebar │   Panel    │          (session, doc,          │    ║
+// ║  │ (clear) │  (island)  │           chat, etc.)            │    ║
+// ║  │         │            │           (island)               │    ║
+// ║  │         │            │                                  │    ║
+// ║  │  + ↻    │            │                                  │    ║
+// ║  └─────────┴────────────┴──────────────────────────────────┘    ║
+// ║                                                                 ║
+// ║  The sidebar has no background — it's the window itself.        ║
+// ║  Secondary + Primary are opaque islands with rounded corners    ║
+// ║  floating on the translucent sidebar material.                  ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 #if os(macOS)
-  extension AppView {
 
-    /// The panel inset from the window edge. The window corner radius on
-    /// macOS 26 Tahoe is 10pt — panels sit `panelInset` inside the window
-    /// so a concentric inner radius = windowRadius − panelInset.
-    private var panelInset: CGFloat { 6 }
-    private var panelCornerRadius: CGFloat { 10 }
+// MARK: - Layout Constants
 
-    var macOSBody: some View {
+private enum PanelMetrics {
+  /// Space between the window edge and panel islands.
+  static let inset: CGFloat = 6
+  /// Space between two adjacent panel islands.
+  static let gap: CGFloat = 1
+  /// Width of the first sidebar column.
+  static let sidebarWidth: CGFloat = 200
+  /// Width of the secondary (list) panel.
+  static let secondaryWidth: CGFloat = 280
+  /// How far down from the window top the traffic lights sit.
+  /// This leaves room for the navigation row (sidebar toggle, back/forward).
+  static let trafficLightInset: CGFloat = 14
+  /// Height of the navigation row above the sidebar content.
+  static let navRowHeight: CGFloat = 38
+}
+
+// MARK: - Mac App Shell
+
+struct MacAppShell: View {
+  @Bindable var store: StoreOf<AppFeature>
+  @Environment(\.windowCornerRadius) private var windowCornerRadius
+
+  /// Concentric corner radius for panels that sit `inset` inside the window.
+  private var panelRadius: CGFloat {
+    max(windowCornerRadius - PanelMetrics.inset, 4)
+  }
+
+  var body: some View {
+    ZStack {
+      // Layer 0: Vibrancy material fills the entire window.
+      SidebarMaterialBackground(
+        tintColor: .orange,
+        tintOpacity: 0.06
+      )
+
+      // Layer 1: The three-column layout.
       HStack(spacing: 0) {
-        // Column 1: Sidebar — no background, part of the window chrome
+        // Column 1 — Sidebar (transparent)
         sidebarColumn
-          .frame(width: 200)
 
-        // Column 2: Secondary sidebar — its own island
+        // Column 2 — Secondary panel (opaque island)
         if store.isSecondPanelVisible {
-          secondaryPanel
-            .frame(width: 280)
+          secondaryPanelIsland
             .transition(.move(edge: .leading).combined(with: .opacity))
         }
 
-        // Column 3: Primary content — its own island, fills to window edge
-        primaryContentPanel
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-      }
-      .frame(minWidth: 900, minHeight: 600)
-      .ignoresSafeArea()
-      .background(WindowBackgroundView())
-      .task { store.send(.onAppear) }
-      .alert("Not Implemented", isPresented: $store.isShowingAddFolderAlert) {
-        Button("OK") { }
-      } message: {
-        Text("Folders are not yet implemented.")
+        // Column 3 �� Primary content (opaque island)
+        primaryContentIsland
       }
     }
-
-    // MARK: - Sidebar Column (Column 1 — transparent)
-
-    private var sidebarColumn: some View {
-      VStack(spacing: 0) {
-        // Workspace Switcher
-        workspaceSwitcherHeader
-          .padding(.top, 36) // space for traffic lights
-
-        Spacer().frame(height: 12)
-
-        // Tab buttons
-        sidebarTabButton("Docs", icon: "doc.text", selection: .tab(.docs))
-        sidebarTabButton("Messages", icon: "bubble.left.and.bubble.right", selection: .tab(.messages))
-
-        Divider()
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-
-        sidebarTabButton("Agents", icon: "cpu", selection: nil, disabled: true)
-        sidebarTabButton("Settings", icon: "gearshape", selection: nil, disabled: true)
-
-        Divider()
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-
-        // Sessions section
-        sessionsSection
-
-        Spacer()
-
-        // Bottom toolbar
-        sidebarBottomBar
-      }
-      .padding(.horizontal, 4)
+    .frame(minWidth: 960, minHeight: 640)
+    .ignoresSafeArea()
+    .windowChrome(trafficLightTopInset: PanelMetrics.trafficLightInset)
+    .task { store.send(.onAppear) }
+    .alert("Not Implemented", isPresented: $store.isShowingAddFolderAlert) {
+      Button("OK") { }
+    } message: {
+      Text("Folders are not yet implemented.")
     }
+  }
 
-    private func sidebarTabButton(
-      _ title: String,
-      icon: String,
-      selection: SidebarSelection?,
-      disabled: Bool = false
-    ) -> some View {
-      Button {
-        if let selection {
-          store.send(.sidebarSelectionChanged(selection))
-        }
-      } label: {
-        HStack(spacing: 8) {
-          Image(systemName: icon)
-            .font(.system(size: 13))
-            .frame(width: 20)
-          Text(title)
-            .font(.system(size: 13))
-          Spacer()
-          if disabled {
-            Text("Soon")
-              .font(.caption2)
-              .foregroundStyle(.tertiary)
+  // ──────────────────────────────────────────────────────────────
+  // MARK: Column 1 — Sidebar
+  // ──────────────────────────────────────────────────────────────
+
+  private var sidebarColumn: some View {
+    VStack(spacing: 0) {
+      // Navigation row: sidebar toggle + back/forward + refresh
+      // Sits at the same level as the traffic lights.
+      navRow
+
+      Divider()
+        .padding(.horizontal, 16)
+        .opacity(0.4)
+
+      // Workspace switcher
+      workspaceSwitcher
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+
+      // Tab buttons
+      sidebarItem("Docs", icon: "doc.text", tag: .tab(.docs))
+      sidebarItem("Messages", icon: "bubble.left.and.bubble.right", tag: .tab(.messages))
+
+      smallDivider
+
+      sidebarItem("Agents", icon: "cpu", tag: nil, disabled: true)
+      sidebarItem("Settings", icon: "gearshape", tag: nil, disabled: true)
+
+      smallDivider
+
+      // Sessions section
+      sessionsSection
+
+      Spacer(minLength: 0)
+
+      // Bottom actions
+      bottomActions
+    }
+    .frame(width: PanelMetrics.sidebarWidth)
+  }
+
+  // MARK: Nav Row
+
+  private var navRow: some View {
+    HStack(spacing: 2) {
+      // Leave space for the traffic lights — they sit to the left.
+      // close + minimize + zoom ≈ 70pt wide
+      Spacer()
+        .frame(width: 76)
+
+      sidebarToggleButton
+
+      Spacer().frame(width: 4)
+
+      navButton(icon: "chevron.left", help: "Back") { }
+      navButton(icon: "chevron.right", help: "Forward") { }
+
+      Spacer()
+
+      navButton(icon: "arrow.clockwise", help: "Refresh") {
+        store.send(.refreshTick)
+      }
+    }
+    .frame(height: PanelMetrics.navRowHeight)
+    .padding(.horizontal, 8)
+  }
+
+  private var sidebarToggleButton: some View {
+    Button {
+      _ = withAnimation(.easeInOut(duration: 0.2)) {
+        store.send(.toggleSecondPanel)
+      }
+    } label: {
+      Image(systemName: "sidebar.left")
+        .font(.system(size: 13, weight: .medium))
+        .foregroundStyle(.secondary)
+        .frame(width: 28, height: 28)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .help(store.isSecondPanelVisible ? "Hide sidebar" : "Show sidebar")
+  }
+
+  private func navButton(icon: String, help: String, action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(systemName: icon)
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(.secondary)
+        .frame(width: 28, height: 28)
+        .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .help(help)
+  }
+
+  // MARK: Workspace Switcher
+
+  private var workspaceSwitcher: some View {
+    Menu {
+      ForEach(store.workspaces, id: \.id) { workspace in
+        Button {
+          store.send(.switchWorkspace(workspace))
+        } label: {
+          HStack {
+            Text(workspace.name)
+            if workspace.id == store.activeWorkspace.id {
+              Image(systemName: "checkmark")
+            }
           }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(
-          store.sidebarSelection == selection && selection != nil
-            ? Color.white.opacity(0.1)
-            : Color.clear
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+      }
+    } label: {
+      HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 1) {
+          Text(store.workspaceName)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(.primary)
+          Text(store.activeWorkspace.serverURL)
+            .font(.caption2)
+            .foregroundStyle(.tertiary)
+            .lineLimit(1)
+        }
+        Spacer()
+        Image(systemName: "chevron.up.chevron.down")
+          .font(.caption2)
+          .foregroundStyle(.tertiary)
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .padding(.horizontal, 8)
+  }
+
+  // MARK: Sidebar Items
+
+  private func sidebarItem(
+    _ title: String,
+    icon: String,
+    tag: SidebarSelection?,
+    disabled: Bool = false
+  ) -> some View {
+    Button {
+      if let tag {
+        store.send(.sidebarSelectionChanged(tag))
+      }
+    } label: {
+      HStack(spacing: 8) {
+        Image(systemName: icon)
+          .font(.system(size: 13))
+          .frame(width: 20)
+        Text(title)
+          .font(.system(size: 13))
+        Spacer()
+        if disabled {
+          Text("Soon")
+            .font(.caption2)
+            .foregroundStyle(.quaternary)
+        }
+      }
+      .padding(.horizontal, 12)
+      .padding(.vertical, 6)
+      .background(
+        store.sidebarSelection == tag && tag != nil
+          ? Color.primary.opacity(0.08)
+          : Color.clear
+      )
+      .clipShape(RoundedRectangle(cornerRadius: 6))
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .foregroundStyle(disabled ? .tertiary : .secondary)
+    .disabled(disabled)
+    .padding(.horizontal, 8)
+  }
+
+  private var smallDivider: some View {
+    Divider()
+      .padding(.horizontal, 16)
+      .padding(.vertical, 6)
+      .opacity(0.4)
+  }
+
+  // MARK: Sessions Section
+
+  private var sessionsSection: some View {
+    VStack(spacing: 0) {
+      // Section header (collapsible)
+      Button {
+        _ = withAnimation(.easeInOut(duration: 0.2)) {
+          store.send(.toggleSessionsSection)
+        }
+      } label: {
+        HStack(spacing: 6) {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 9, weight: .bold))
+            .rotationEffect(.degrees(store.isSessionsSectionCollapsed ? 0 : 90))
+          Text("SESSIONS")
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(.tertiary)
+          Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 4)
         .contentShape(Rectangle())
       }
       .buttonStyle(.plain)
-      .foregroundStyle(disabled ? .tertiary : .secondary)
-      .disabled(disabled)
-      .padding(.horizontal, 8)
-    }
 
-    // MARK: Sessions Section
+      if !store.isSessionsSectionCollapsed {
+        // Inbox
+        sidebarItem("Inbox", icon: "tray", tag: .inbox)
 
-    private var sessionsSection: some View {
-      VStack(spacing: 0) {
+        // Add Folder (placeholder)
         Button {
-          _ = withAnimation(.easeInOut(duration: 0.2)) {
-            store.send(.toggleSessionsSection)
-          }
+          store.send(.addFolderTapped)
         } label: {
-          HStack(spacing: 6) {
-            Image(systemName: "chevron.right")
-              .font(.system(size: 9, weight: .semibold))
-              .rotationEffect(.degrees(store.isSessionsSectionCollapsed ? 0 : 90))
-            Text("Sessions")
-              .font(.system(size: 11, weight: .semibold))
-              .foregroundStyle(.secondary)
+          HStack(spacing: 8) {
+            Image(systemName: "folder.badge.plus")
+              .font(.system(size: 12))
+              .frame(width: 20)
+            Text("Add Folder")
+              .font(.system(size: 12))
             Spacer()
           }
-          .padding(.horizontal, 20)
-          .padding(.vertical, 4)
+          .padding(.horizontal, 12)
+          .padding(.vertical, 5)
+          .foregroundStyle(.quaternary)
           .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-
-        if !store.isSessionsSectionCollapsed {
-          sidebarSessionItem(
-            "Inbox",
-            icon: "tray",
-            isSelected: store.sidebarSelection == .inbox,
-            count: store.sessions.sessions.count(where: { $0.status == .running })
-          ) {
-            store.send(.sidebarSelectionChanged(.inbox))
-          }
-
-          Button {
-            store.send(.addFolderTapped)
-          } label: {
-            HStack(spacing: 8) {
-              Image(systemName: "folder.badge.plus")
-                .font(.system(size: 12))
-                .frame(width: 20)
-              Text("Add Folder")
-                .font(.system(size: 12))
-              Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 5)
-            .foregroundStyle(.tertiary)
-            .contentShape(Rectangle())
-          }
-          .buttonStyle(.plain)
-          .padding(.horizontal, 8)
-        }
+        .padding(.horizontal, 8)
       }
     }
+  }
 
-    private func sidebarSessionItem(
-      _ title: String,
-      icon: String,
-      isSelected: Bool,
-      count: Int = 0,
-      action: @escaping () -> Void
-    ) -> some View {
-      Button(action: action) {
-        HStack(spacing: 8) {
-          Image(systemName: icon)
-            .font(.system(size: 13))
-            .frame(width: 20)
-          Text(title)
-            .font(.system(size: 13))
-          Spacer()
-          if count > 0 {
-            Text("\(count)")
-              .font(.caption2)
-              .fontWeight(.semibold)
-              .padding(.horizontal, 6)
-              .padding(.vertical, 2)
-              .background(.orange.opacity(0.25))
-              .foregroundStyle(.orange)
-              .clipShape(Capsule())
-          }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(isSelected ? Color.white.opacity(0.1) : Color.clear)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
-        .contentShape(Rectangle())
+  // MARK: Bottom Actions
+
+  private var bottomActions: some View {
+    HStack(spacing: 6) {
+      navButton(icon: "arrow.clockwise", help: "Refresh") {
+        store.send(.refreshTick)
       }
-      .buttonStyle(.plain)
-      .foregroundStyle(.secondary)
-      .padding(.horizontal, 8)
+      navButton(icon: "plus", help: "New Session") {
+        store.send(.createSessionTapped)
+      }
+      Spacer()
     }
+    .padding(.horizontal, 12)
+    .padding(.vertical, 8)
+  }
 
-    // MARK: Sidebar Bottom Bar
+  // ──────────────────────────────────────────────────────────────
+  // MARK: Column 2 — Secondary Panel Island
+  // ──────────────────────────────────────────────────────────────
 
-    private var sidebarBottomBar: some View {
-      HStack(spacing: 4) {
-        Button {
-          store.send(.refreshTick)
-        } label: {
-          Image(systemName: "arrow.clockwise")
-            .font(.system(size: 12))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .help("Refresh")
-
-        Button {
-          store.send(.createSessionTapped)
-        } label: {
-          Image(systemName: "plus")
-            .font(.system(size: 12))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(.secondary)
-        .help("New Session")
-
+  private var secondaryPanelIsland: some View {
+    VStack(spacing: 0) {
+      // Panel header
+      HStack {
+        Text(secondaryPanelTitle)
+          .font(.system(size: 13, weight: .semibold))
         Spacer()
-      }
-      .padding(.horizontal, 16)
-      .padding(.vertical, 10)
-    }
-
-    // MARK: - Secondary Panel (Column 2 — its own island)
-
-    @ViewBuilder
-    private var secondaryPanel: some View {
-      VStack(spacing: 0) {
-        // Header with hide button
-        HStack {
-          Text(secondaryPanelTitle)
-            .font(.headline)
-            .foregroundStyle(.primary)
-          Spacer()
-          Button {
-            _ = withAnimation(.easeInOut(duration: 0.2)) {
-              store.send(.toggleSecondPanel)
-            }
-          } label: {
-            Image(systemName: "sidebar.left")
-              .font(.system(size: 13))
-              .foregroundStyle(.secondary)
+        Button {
+          _ = withAnimation(.easeInOut(duration: 0.2)) {
+            store.send(.toggleSecondPanel)
           }
-          .buttonStyle(.plain)
-          .help("Hide panel")
+        } label: {
+          Image(systemName: "xmark")
+            .font(.system(size: 10, weight: .semibold))
+            .foregroundStyle(.tertiary)
+            .frame(width: 20, height: 20)
+            .background(Color.primary.opacity(0.05))
+            .clipShape(Circle())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-
-        Divider()
-
-        secondaryPanelContent
+        .buttonStyle(.plain)
+        .help("Hide panel")
       }
-      .background(Color(nsColor: .windowBackgroundColor))
-      .clipShape(RoundedRectangle(cornerRadius: panelCornerRadius))
-      .padding(.leading, panelInset)
-      .padding(.vertical, panelInset)
+      .padding(.horizontal, 12)
+      .padding(.top, 10)
+      .padding(.bottom, 6)
+
+      Divider().padding(.horizontal, 8)
+
+      // Panel content
+      secondaryPanelContent
+        .frame(maxHeight: .infinity)
     }
+    .frame(width: PanelMetrics.secondaryWidth)
+    .background(Color(nsColor: .windowBackgroundColor))
+    .clipShape(RoundedRectangle(cornerRadius: panelRadius))
+    .padding(.top, PanelMetrics.inset)
+    .padding(.bottom, PanelMetrics.inset)
+    .padding(.leading, PanelMetrics.gap)
+  }
 
-    private var secondaryPanelTitle: String {
-      switch store.sidebarSelection {
-      case .tab(.docs): "Docs"
-      case .tab(.messages): "Messages"
-      case .inbox: "Sessions"
-      case nil: ""
-      }
+  private var secondaryPanelTitle: String {
+    switch store.sidebarSelection {
+    case .tab(.docs): "Docs"
+    case .tab(.messages): "Messages"
+    case .inbox: "Sessions"
+    case nil: ""
     }
+  }
 
-    @ViewBuilder
-    private var secondaryPanelContent: some View {
-      switch store.sidebarSelection {
-      case .tab(.docs):
-        DocsTreePanelView(store: store.scope(state: \.docs, action: \.docs))
-      case .tab(.messages):
-        MessagesListPanelView(store: store.scope(state: \.messages, action: \.messages))
-      case .inbox:
-        SessionListView(
-          store: store.scope(state: \.sessions, action: \.sessions),
-          onCreateSession: { store.send(.createSessionTapped) }
-        )
-      case nil:
-        Color.clear
-      }
+  @ViewBuilder
+  private var secondaryPanelContent: some View {
+    switch store.sidebarSelection {
+    case .tab(.docs):
+      DocsTreePanelView(store: store.scope(state: \.docs, action: \.docs))
+    case .tab(.messages):
+      MessagesListPanelView(store: store.scope(state: \.messages, action: \.messages))
+    case .inbox:
+      SessionListView(
+        store: store.scope(state: \.sessions, action: \.sessions),
+        onCreateSession: { store.send(.createSessionTapped) }
+      )
+    case nil:
+      Spacer()
     }
+  }
 
-    // MARK: - Primary Content Panel (Column 3 — its own island, flush right)
+  // ──────────────────────────────────────────────────────────────
+  // MARK: Column 3 — Primary Content Island
+  // ──────────────────────────────────────────────────────────────
 
-    @ViewBuilder
-    private var primaryContentPanel: some View {
-      Group {
-        if store.sessions.selectedSessionID != nil {
-          SessionDetailView(store: store.scope(state: \.sessions, action: \.sessions))
-        } else if store.docs.selectedDoc != nil {
-          DocsDetailView(store: store.scope(state: \.docs, action: \.docs))
-        } else if let channel = store.messages.selectedChannel {
-          messageChatPlaceholder(channel)
-        } else {
-          ContentUnavailableView(
-            "Welcome to Wuhu",
-            systemImage: "sparkles",
-            description: Text("Select a session, document, or conversation to get started")
-          )
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-      }
+  private var primaryContentIsland: some View {
+    primaryContentView
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .background(Color(nsColor: .windowBackgroundColor))
       .clipShape(
-        // Left corners rounded, right corners square (flush with window edge).
-        // The window itself rounds the right corners on macOS 26.
+        // Left corners: concentric radius. Right corners: 0 (flush
+        // with window edge — the OS rounds the window corners).
         UnevenRoundedRectangle(
-          topLeadingRadius: panelCornerRadius,
-          bottomLeadingRadius: panelCornerRadius,
+          topLeadingRadius: panelRadius,
+          bottomLeadingRadius: panelRadius,
           bottomTrailingRadius: 0,
           topTrailingRadius: 0
         )
       )
-      .padding(.leading, panelInset)
-      .padding(.vertical, panelInset)
+      .padding(.top, PanelMetrics.inset)
+      .padding(.bottom, PanelMetrics.inset)
+      .padding(.leading, PanelMetrics.gap)
+  }
+
+  @ViewBuilder
+  private var primaryContentView: some View {
+    if store.sessions.selectedSessionID != nil {
+      SessionDetailView(store: store.scope(state: \.sessions, action: \.sessions))
+    } else if store.docs.selectedDoc != nil {
+      DocsDetailView(store: store.scope(state: \.docs, action: \.docs))
+    } else if let channel = store.messages.selectedChannel {
+      MessageChatPlaceholder(channel: channel)
+    } else {
+      emptyState
     }
+  }
 
-    private func messageChatPlaceholder(_ channel: MockChannel) -> some View {
-      VStack(spacing: 0) {
-        HStack(spacing: 10) {
-          Text(channel.avatarEmoji)
-            .font(.title2)
-          VStack(alignment: .leading, spacing: 1) {
-            Text(channel.name)
-              .font(.headline)
-            Text(channel.isGroup
-              ? "\(channel.members.count) members"
-              : "Direct message")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.bar)
+  private var emptyState: some View {
+    VStack(spacing: 12) {
+      Image(systemName: "sparkles")
+        .font(.system(size: 40))
+        .foregroundStyle(.tertiary)
+      Text("Welcome to Wuhu")
+        .font(.title2)
+        .fontWeight(.semibold)
+      Text("Select a session, document, or conversation to get started")
+        .font(.body)
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
 
-        Divider()
+// MARK: - Message Chat Placeholder
 
-        Spacer()
-        VStack(spacing: 8) {
-          Text(channel.avatarEmoji)
-            .font(.system(size: 48))
-          Text(channel.name)
-            .font(.title2)
-            .fontWeight(.semibold)
-          Text("This is a preview. Messaging is coming soon.")
-            .font(.body)
+private struct MessageChatPlaceholder: View {
+  let channel: MockChannel
+
+  var body: some View {
+    VStack(spacing: 0) {
+      // Header
+      HStack(spacing: 10) {
+        Text(channel.avatarEmoji).font(.title2)
+        VStack(alignment: .leading, spacing: 1) {
+          Text(channel.name).font(.headline)
+          Text(channel.isGroup ? "\(channel.members.count) members" : "Direct message")
+            .font(.caption)
             .foregroundStyle(.secondary)
         }
         Spacer()
       }
-    }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 10)
 
-    // MARK: - Workspace Switcher Header
+      Divider()
 
-    private var workspaceSwitcherHeader: some View {
-      Menu {
-        ForEach(store.workspaces, id: \.id) { workspace in
-          Button {
-            store.send(.switchWorkspace(workspace))
-          } label: {
-            HStack {
-              Text(workspace.name)
-              if workspace.id == store.activeWorkspace.id {
-                Image(systemName: "checkmark")
-              }
-            }
-          }
-        }
-      } label: {
-        HStack(spacing: 6) {
-          VStack(alignment: .leading, spacing: 1) {
-            Text(store.workspaceName)
-              .font(.system(size: 13, weight: .semibold))
-              .foregroundStyle(.primary)
-            Text(store.activeWorkspace.serverURL)
-              .font(.caption2)
-              .foregroundStyle(.tertiary)
-              .lineLimit(1)
-          }
-          Spacer()
-          Image(systemName: "chevron.up.chevron.down")
-            .font(.caption2)
-            .foregroundStyle(.tertiary)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .contentShape(Rectangle())
+      Spacer()
+      VStack(spacing: 8) {
+        Text(channel.avatarEmoji).font(.system(size: 48))
+        Text(channel.name).font(.title2).fontWeight(.semibold)
+        Text("Messaging is coming soon.")
+          .font(.body)
+          .foregroundStyle(.secondary)
       }
-      .buttonStyle(.plain)
-      .padding(.horizontal, 8)
+      Spacer()
     }
   }
+}
 
-  // MARK: - Window Background
-
-  /// Full-window vibrancy behind the sidebar, with a subtle orange tint.
-  ///
-  /// Apple's recommended approach: layer a translucent color on top of
-  /// the `NSVisualEffectView` to tint the material without breaking
-  /// vibrancy or behind-window blending.
-  struct WindowBackgroundView: View {
-    var body: some View {
-      ZStack {
-        VisualEffectBackground()
-        Color.orange.opacity(0.04)
-      }
-    }
-  }
-
-  private struct VisualEffectBackground: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSVisualEffectView {
-      let view = NSVisualEffectView()
-      view.material = .sidebar
-      view.blendingMode = .behindWindow
-      view.state = .active
-      return view
-    }
-
-    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
-  }
 #endif
 
-// MARK: - iOS: Preserved NavigationSplitView
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  iOS — Standard NavigationSplitView                             ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 #if os(iOS)
   extension AppView {
@@ -621,6 +678,8 @@ struct AppView: View {
     }
   }
 #endif
+
+// MARK: - Preview
 
 #Preview {
   AppView(
