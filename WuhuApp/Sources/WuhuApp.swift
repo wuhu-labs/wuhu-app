@@ -14,11 +14,12 @@ struct WuhuApp: App {
       AppView(
         store: Store(initialState: AppFeature.State()) {
           AppFeature()
-        },
+        }
       )
     }
     #if os(macOS)
-    .windowStyle(.automatic)
+    .windowStyle(.hiddenTitleBar)
+    .windowToolbarStyle(.unified(showsTitle: false))
     .defaultSize(width: 1200, height: 750)
     .commands {
       CheckForUpdatesCommand(updater: updater)
@@ -34,7 +35,7 @@ struct WuhuApp: App {
             let id = WorkspaceStorage.loadActiveWorkspaceID()
             return ws.first(where: { $0.id == id }) ?? ws.first ?? .default
           }(),
-          onSwitchWorkspace: nil,
+          onSwitchWorkspace: nil
         )
       }
     #endif

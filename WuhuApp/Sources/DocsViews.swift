@@ -2,6 +2,31 @@ import ComposableArchitecture
 import MarkdownUI
 import SwiftUI
 
+// MARK: - Docs Tree Panel (macOS sidebar-style)
+
+#if os(macOS)
+  struct DocsTreePanelView: View {
+    @Bindable var store: StoreOf<DocsFeature>
+
+    var body: some View {
+      List(selection: $store.selectedDocID.sending(\.docSelected)) {
+        ForEach(store.docs) { doc in
+          HStack(spacing: 6) {
+            Image(systemName: "doc.text")
+              .font(.system(size: 11))
+              .foregroundStyle(.secondary)
+            Text(doc.title)
+              .font(.system(size: 12))
+              .lineLimit(1)
+          }
+          .tag(doc.id)
+        }
+      }
+      .listStyle(.sidebar)
+    }
+  }
+#endif
+
 // MARK: - Docs List (content column)
 
 struct DocsListView: View {
