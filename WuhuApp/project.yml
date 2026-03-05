@@ -150,3 +150,57 @@ targets:
         product: MarkdownUI
       - framework: Frameworks/Sparkle.xcframework
         embed: true
+
+  WuhuMacShell:
+    type: application
+    platform: macOS
+    sources:
+      - path: ShellApp
+      - path: Sources
+        excludes:
+          - Info.plist
+          - Info-macOS.plist
+          - WuhuApp.entitlements
+          - WuhuAppMac.entitlements
+          - WuhuApp.swift
+          - Updater.swift
+    info:
+      properties:
+        CFBundleDisplayName: WuhuShell
+        CFBundleIconName: AppIcon
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSMainStoryboardFile: ""
+        LSApplicationCategoryType: public.app-category.developer-tools
+    entitlements:
+      path: ShellApp/WuhuMacShell.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+    settings:
+      base:
+        PRODUCT_NAME: WuhuShell
+        PRODUCT_BUNDLE_IDENTIFIER: ms.liu.wuhu.macshell
+        MACOSX_DEPLOYMENT_TARGET: "15.0"
+        SWIFT_VERSION: "6.0"
+        DISABLE_DIAMOND_PROBLEM_DIAGNOSTIC: YES
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
+    dependencies:
+      - package: WuhuCore
+        product: WuhuAPI
+      - package: WuhuCore
+        product: WuhuClient
+      - package: WuhuCore
+        product: WuhuCoreClient
+      - package: ComposableArchitecture
+        product: ComposableArchitecture
+      - package: IdentifiedCollections
+        product: IdentifiedCollections
+      - package: Dependencies
+        product: Dependencies
+      - package: CasePaths
+        product: CasePaths
+      - package: MarkdownUI
+        product: MarkdownUI

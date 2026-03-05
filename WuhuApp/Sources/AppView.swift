@@ -42,7 +42,7 @@ struct AppView: View {
 
 // MARK: - Layout Constants
 
-private enum PanelMetrics {
+enum PanelMetrics {
   /// Space between the window edge and panel islands.
   static let inset: CGFloat = 6
   /// Space between two adjacent panel islands.
@@ -94,7 +94,6 @@ struct MacAppShell: View {
     }
     .frame(minWidth: 960, minHeight: 640)
     .ignoresSafeArea()
-    .windowChrome(trafficLightTopInset: PanelMetrics.trafficLightInset)
     .task { store.send(.onAppear) }
     .alert("Not Implemented", isPresented: $store.isShowingAddFolderAlert) {
       Button("OK") { }
