@@ -20,6 +20,7 @@ struct SettingsView: View {
   @State private var editName = ""
   @State private var editURL = ""
 
+  #if os(macOS)
   init(
     workspaces: [Workspace],
     activeWorkspace: Workspace,
@@ -29,10 +30,19 @@ struct SettingsView: View {
     _workspaces = State(initialValue: workspaces)
     _activeWorkspace = State(initialValue: activeWorkspace)
     self.onSwitchWorkspace = onSwitchWorkspace
-    #if os(macOS)
     self.embeddedRunner = embeddedRunner
-    #endif
   }
+  #else
+  init(
+    workspaces: [Workspace],
+    activeWorkspace: Workspace,
+    onSwitchWorkspace: ((Workspace) -> Void)?,
+  ) {
+    _workspaces = State(initialValue: workspaces)
+    _activeWorkspace = State(initialValue: activeWorkspace)
+    self.onSwitchWorkspace = onSwitchWorkspace
+  }
+  #endif
 
   var body: some View {
     Form {
