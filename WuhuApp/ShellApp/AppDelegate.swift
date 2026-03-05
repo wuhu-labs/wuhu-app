@@ -17,7 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       defer: false
     )
 
-    // Chrome-less setup — done once, at creation, no hacks needed.
+    // Chrome-less setup — done once, at creation.
     window.titlebarAppearsTransparent = true
     window.titleVisibility = .hidden
     window.backgroundColor = .clear
@@ -26,21 +26,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     window.minSize = NSSize(width: 960, height: 640)
     window.center()
 
-    // Host the SwiftUI shell as the window's content.
+    // Host the SwiftUI shell.
     let hostingView = NSHostingView(rootView: MacAppShell(store: store))
     window.contentView = hostingView
 
     window.makeKeyAndOrderFront(nil)
     self.window = window
 
-    // Reposition traffic lights now and on every resize.
-    repositionTrafficLights()
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(windowDidResize(_:)),
-      name: NSWindow.didResizeNotification,
-      object: window
-    )
+    // Push traffic lights down to make room for the nav row.
+    setupTrafficLightConstraints(in: window)
   }
 
   func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -49,21 +43,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   // MARK: - Traffic Light Positioning
 
-  @objc private func windowDidResize(_ notification: Notification) {
-    repositionTrafficLights()
-  }
+  /// Uses Auto Layout to pin the traffic light buttons' container to
+  /// a fixed vertical offset from the top of the titlebar. This
+  /// survives resizes, full-screen transitions, and tab bar changes
+  /// without needing notification observers or frame hacking.
+  private func setupTrafficLightConstraints(in window: NSWindow) {
+    guard let close = window.standardWindowButton(.closeButton),
+          let container = close.superview
+    else { return }
 
-  private func repositionTrafficLights() {
-    guard let window else { return }
-    let topInset: CGFloat = PanelMetrics.trafficLightInset
-    let types: [NSWindow.ButtonType] = [.closeButton, .miniaturizeButton, .zoomButton]
-    for type in types {
-      guard let button = window.standardWindowButton(type),
-            let container = button.superview
-      else { continue }
-      var frame = container.frame
-      frame.origin.y = window.frame.height - frame.height - topInset
-      container.frame = frame
+    let topInset = PanelMetrics.trafficLightInset
+
+    // The container is the "NSTitlebarContainerView" superview's child
+    // that holds all three buttons. We pin it via Auto Layout.
+    container.translatesAutoresizingMaskIntoConstraints = false
+
+    if let titlebarContainer = container.superview {
+      NSLayoutConstraint.activate([
+        container.topAnchor.constraint(
+          equalTo: titlebarContainer.topAnchor,
+          constant: topInset
+        ),
+        container.leadingAnchor.constraint(
+          equalTo: titlebarContainer.leadingAnchor
+        ),
+      ])
     }
   }
 }
