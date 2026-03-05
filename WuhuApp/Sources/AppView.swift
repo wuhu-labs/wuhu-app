@@ -434,9 +434,21 @@ struct AppView: View {
 
   // MARK: - Window Background
 
-  /// Full-window vibrancy behind the sidebar. The panel islands sit on top
-  /// with their own opaque backgrounds.
-  struct WindowBackgroundView: NSViewRepresentable {
+  /// Full-window vibrancy behind the sidebar, with a subtle orange tint.
+  ///
+  /// Apple's recommended approach: layer a translucent color on top of
+  /// the `NSVisualEffectView` to tint the material without breaking
+  /// vibrancy or behind-window blending.
+  struct WindowBackgroundView: View {
+    var body: some View {
+      ZStack {
+        VisualEffectBackground()
+        Color.orange.opacity(0.04)
+      }
+    }
+  }
+
+  private struct VisualEffectBackground: NSViewRepresentable {
     func makeNSView(context: Context) -> NSVisualEffectView {
       let view = NSVisualEffectView()
       view.material = .sidebar

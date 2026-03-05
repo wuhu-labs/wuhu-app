@@ -39,6 +39,7 @@ struct SessionListView: View {
     }
     .listStyle(.inset)
     .navigationTitle("Sessions")
+    #if os(iOS)
     .toolbar {
       ToolbarItem(placement: .automatic) {
         Toggle(isOn: Binding(
@@ -49,7 +50,6 @@ struct SessionListView: View {
         }
         .help("Show archived sessions")
       }
-      #if os(iOS)
       if let onCreateSession {
         ToolbarItem(placement: .primaryAction) {
           Button {
@@ -60,8 +60,8 @@ struct SessionListView: View {
           .help("New Session")
         }
       }
-      #endif
     }
+    #endif
     .alert("Rename Session", isPresented: $store.isShowingRenameDialog) {
       TextField("Session title", text: $store.renameText)
       Button("Rename") {

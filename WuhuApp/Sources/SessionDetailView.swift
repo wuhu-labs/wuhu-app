@@ -47,6 +47,7 @@ struct SessionDetailView: View {
         )
       }
     }
+    #if os(iOS)
     .toolbar {
       if store.selectedSession != nil {
         ToolbarItemGroup(placement: .primaryAction) {
@@ -56,6 +57,7 @@ struct SessionDetailView: View {
         }
       }
     }
+    #endif
     .sheet(isPresented: $store.isShowingModelPicker) {
       SessionModelPickerSheet(store: store)
     }
