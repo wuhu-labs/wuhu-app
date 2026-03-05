@@ -14,7 +14,7 @@ settings:
 packages:
   WuhuCore:
     url: https://github.com/wuhu-labs/wuhu-core.git
-    branch: feature/incoming-runner-support
+    branch: main
   ComposableArchitecture:
     url: https://github.com/pointfreeco/swift-composable-architecture
     from: 1.23.1
