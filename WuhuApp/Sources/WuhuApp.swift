@@ -18,8 +18,9 @@ struct WuhuApp: App {
       )
     }
     #if os(macOS)
-    // No title bar, no toolbar — we own the entire window chrome.
-    .windowStyle(.hiddenTitleBar)
+    // Use default window style so the titlebar container (with traffic
+    // lights) exists. WindowConfigurator makes the titlebar transparent
+    // and extends content behind it via NSWindow configuration.
     .defaultSize(width: 1200, height: 750)
     .commands {
       CheckForUpdatesCommand(updater: updater)
