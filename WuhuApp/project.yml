@@ -14,7 +14,7 @@ settings:
 packages:
   WuhuCore:
     url: https://github.com/wuhu-labs/wuhu-core.git
-    branch: main
+    exactVersion: "0.6.0"
   ComposableArchitecture:
     url: https://github.com/pointfreeco/swift-composable-architecture
     from: 1.23.1
@@ -113,6 +113,8 @@ targets:
         SUFeedURL: "https://wuhu.ai/releases/appcast.xml"
         SUPublicEDKey: "cLD5wooImNT4Loh8TXGByHrSKnKtzU5T4As3L5L5BA4="
         SUEnableInstallerLauncherService: true
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
     entitlements:
       path: Sources/WuhuAppMac.entitlements
       properties:
