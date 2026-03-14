@@ -48,5 +48,12 @@ let package = Package(
     .package(url: "https://github.com/pointfreeco/xctest-dynamic-overlay", from: "1.9.0"),
     .package(url: "https://github.com/swiftlang/swift-syntax", from: "602.0.0"),
     .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.7.1"),
+  ],
+  targets: [
+    .binaryTarget(
+      name: "Sparkle",
+      url: "https://github.com/sparkle-project/Sparkle/releases/download/2.7.0/Sparkle-for-Swift-Package-Manager.zip",
+      checksum: "a1fb05c4fd6b73bc351f4d326e6171473b7a99b7f2bfa8f5f69f7281f66dc387"
+    )
   ]
 )

@@ -27,9 +27,6 @@ DerivedData/
 build-mac/
 build/
 
-# Sparkle xcframework (downloaded at build time, not committed)
-WuhuApp/Frameworks/
-
 # Sparkle tools (large binaries, not needed in repo)
 scripts/sign_update
 scripts/generate_keys

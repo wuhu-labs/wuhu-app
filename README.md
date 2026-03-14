@@ -10,10 +10,9 @@ Requires [Tuist](https://tuist.dev):
 brew install tuist
 ```
 
-Fetch Sparkle framework and generate the Xcode project:
+Generate the Xcode project:
 
 ```bash
-./scripts/fetch-sparkle.sh
 tuist install
 tuist generate
 ```
@@ -96,8 +95,7 @@ Existing macOS users get a native Sparkle update dialog automatically.
 
 The macOS app uses [Sparkle](https://sparkle-project.org/) for self-update:
 
-- Sparkle xcframework is downloaded at build time by `scripts/fetch-sparkle.sh`
-  (not committed to git — binary frameworks don't survive git round-trips)
+- Sparkle is downloaded by Tuist as a binary package artifact during `tuist install`
 - Updates are signed with EdDSA (key at `~/.wuhu/keys/sparkle_eddsa_key.priv`)
 - Appcast served from `https://wuhu.ai/releases/appcast.xml`
 - Public key embedded in the macOS Info.plist (`SUPublicEDKey`)
@@ -113,7 +111,7 @@ service that survives reboots.
 - [wuhu-core](https://github.com/wuhu-labs/wuhu-core) — WuhuAPI, WuhuClient, WuhuCoreClient
 - [swift-composable-architecture](https://github.com/pointfreeco/swift-composable-architecture) — TCA
 - [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) — Markdown rendering
-- [Sparkle](https://sparkle-project.org/) 2.7.0 — macOS auto-update (fetched at build time)
+- [Sparkle](https://sparkle-project.org/) 2.7.0 — macOS auto-update
 
 ## License
 

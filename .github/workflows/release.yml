@@ -29,9 +29,6 @@ jobs:
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-      - name: Fetch Sparkle
-        run: ./scripts/fetch-sparkle.sh
-
       - name: Generate Xcode project
         run: |
           tuist install
@@ -71,9 +68,6 @@ jobs:
         run: security unlock-keychain -p "$KEYCHAIN_PASSWORD" ~/Library/Keychains/login.keychain-db
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-
-      - name: Fetch Sparkle
-        run: ./scripts/fetch-sparkle.sh
 
       - name: Generate Xcode project
         run: |

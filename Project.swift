@@ -113,7 +113,7 @@ let project = Project(
       resources: sharedResources,
       entitlements: .file(path: "WuhuApp/Sources/WuhuAppMac.entitlements"),
       dependencies: sharedDependencies + [
-        .xcframework(path: "WuhuApp/Frameworks/Sparkle.xcframework"),
+        .external(name: "Sparkle"),
       ],
       settings: .settings(
         base: sharedSettings.merging([
