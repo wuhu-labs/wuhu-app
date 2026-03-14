@@ -47,9 +47,6 @@ done
 echo "🚀 Wuhu macOS Notarized Build"
 echo "=============================="
 
-# Step 0: Fetch Sparkle if needed
-"$SCRIPT_DIR/fetch-sparkle.sh"
-
 # Step 1: Generate Xcode project
 if [ "$SKIP_GEN" = false ]; then
     echo "📦 Installing Tuist dependencies..."

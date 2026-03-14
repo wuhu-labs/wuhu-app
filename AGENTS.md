@@ -20,15 +20,8 @@ tuist generate
 ```
 
 The macOS target (`WuhuAppMac`) depends on
-[Sparkle](https://github.com/sparkle-project/Sparkle) for auto-updates. The
-`Sparkle.xcframework` is **not committed** — fetch it before building:
-
-```bash
-./scripts/fetch-sparkle.sh
-```
-
-The script is idempotent; it skips the download if the framework is already
-present.
+[Sparkle](https://github.com/sparkle-project/Sparkle) for auto-updates.
+Tuist downloads Sparkle's binary artifact as part of `tuist install`.
 
 ## Build
 

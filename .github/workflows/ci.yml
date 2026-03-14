@@ -15,9 +15,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Fetch Sparkle
-        run: ./scripts/fetch-sparkle.sh
-
       - name: Generate Xcode project
         run: |
           tuist install
