@@ -19,12 +19,14 @@ jobs:
         run: ./scripts/fetch-sparkle.sh
 
       - name: Generate Xcode project
-        run: cd WuhuApp && xcodegen generate
+        run: |
+          tuist install
+          tuist generate
 
       - name: Build macOS
         run: >
           xcodebuild build
-          -project WuhuApp/WuhuApp.xcodeproj
+          -workspace WuhuApp.xcworkspace
           -scheme WuhuAppMac
           -destination 'platform=macOS'
           -skipMacroValidation
@@ -37,9 +39,9 @@ jobs:
       - name: Build iOS
         run: >
           xcodebuild build
-          -project WuhuApp/WuhuApp.xcodeproj
+          -workspace WuhuApp.xcworkspace
           -scheme WuhuApp
-          -destination 'generic/platform=iOS'
+          -destination 'generic/platform=iOS Simulator'
           -skipMacroValidation
           -skipPackagePluginValidation
           CODE_SIGN_IDENTITY=""

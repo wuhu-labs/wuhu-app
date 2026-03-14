@@ -8,10 +8,6 @@ struct SettingsView: View {
   @State private var activeWorkspace: Workspace
   var onSwitchWorkspace: ((Workspace) -> Void)?
 
-  #if os(macOS)
-  var embeddedRunner: EmbeddedRunner?
-  #endif
-
   @State private var isAddingWorkspace = false
   @State private var newWorkspaceName = ""
   @State private var newWorkspaceURL = "http://localhost:8080"
@@ -25,12 +21,10 @@ struct SettingsView: View {
     workspaces: [Workspace],
     activeWorkspace: Workspace,
     onSwitchWorkspace: ((Workspace) -> Void)?,
-    embeddedRunner: EmbeddedRunner? = nil,
   ) {
     _workspaces = State(initialValue: workspaces)
     _activeWorkspace = State(initialValue: activeWorkspace)
     self.onSwitchWorkspace = onSwitchWorkspace
-    self.embeddedRunner = embeddedRunner
   }
   #else
   init(
@@ -103,13 +97,6 @@ struct SettingsView: View {
           Label("Add Workspace", systemImage: "plus")
         }
       }
-
-      #if os(macOS)
-      if let embeddedRunner {
-        RunnerSettingsSection(runner: embeddedRunner)
-      }
-      #endif
-
       Section("Identity") {
         TextField("Username", text: $username)
           .textFieldStyle(.roundedBorder)
@@ -191,68 +178,3 @@ struct SettingsView: View {
     editingWorkspace = nil
   }
 }
-
-// MARK: - Runner Settings
-
-#if os(macOS)
-
-struct RunnerSettingsSection: View {
-  @Bindable var runner: EmbeddedRunner
-
-  var body: some View {
-    Section("Runner") {
-      Toggle("Enable embedded runner", isOn: $runner.isEnabled)
-
-      if runner.isEnabled {
-        TextField("Runner Name", text: $runner.runnerName)
-          .textFieldStyle(.roundedBorder)
-        Text("The name this runner advertises to the Wuhu server. Agents see this in list_runners.")
-          .font(.caption)
-          .foregroundStyle(.secondary)
-
-        HStack(spacing: 8) {
-          statusIndicator
-          statusText
-        }
-      }
-    }
-  }
-
-  @ViewBuilder
-  private var statusIndicator: some View {
-    switch runner.status {
-    case .disabled:
-      Image(systemName: "circle")
-        .foregroundStyle(.secondary)
-    case .connecting:
-      ProgressView()
-        .controlSize(.small)
-    case .connected:
-      Image(systemName: "checkmark.circle.fill")
-        .foregroundStyle(.green)
-    case .disconnected:
-      Image(systemName: "exclamationmark.triangle.fill")
-        .foregroundStyle(.orange)
-    }
-  }
-
-  @ViewBuilder
-  private var statusText: some View {
-    switch runner.status {
-    case .disabled:
-      Text("Disabled")
-        .foregroundStyle(.secondary)
-    case .connecting:
-      Text("Connecting to server…")
-        .foregroundStyle(.secondary)
-    case .connected:
-      Text("Connected")
-        .foregroundStyle(.green)
-    case let .disconnected(reason):
-      Text(reason)
-        .foregroundStyle(.orange)
-    }
-  }
-}
-
-#endif

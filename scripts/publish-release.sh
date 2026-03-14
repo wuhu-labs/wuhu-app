@@ -6,8 +6,8 @@ set -euo pipefail
 # Usage:
 #   ./scripts/publish-release.sh <zip-path>
 #
-# The script reads MARKETING_VERSION and CURRENT_PROJECT_VERSION from
-# project.yml so you don't have to pass them manually.
+# The script reads local fallback versions from Project.swift so you don't have
+# to pass them manually.
 #
 # Prerequisites:
 #   - wrangler logged in (wrangler whoami)
@@ -16,7 +16,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-PROJECT_YML="$PROJECT_ROOT/WuhuApp/project.yml"
+PROJECT_SWIFT="$PROJECT_ROOT/Project.swift"
 
 # R2 config
 export CLOUDFLARE_ACCOUNT_ID="${CLOUDFLARE_ACCOUNT_ID:-476ba1878542c080b6bf4a771719d1fd}"
@@ -54,14 +54,14 @@ if [ ! -x "$SIGN_UPDATE" ]; then
   exit 1
 fi
 
-# Read version from env vars (set by CI) or fall back to project.yml
+# Read version from env vars (set by CI) or fall back to Project.swift
 if [ -z "${MARKETING_VERSION:-}" ] || [ -z "${BUILD_NUMBER:-}" ]; then
-  MARKETING_VERSION=$(grep 'MARKETING_VERSION:' "$PROJECT_YML" | head -1 | sed 's/.*: *"\(.*\)"/\1/')
-  BUILD_NUMBER=$(grep 'CURRENT_PROJECT_VERSION:' "$PROJECT_YML" | head -1 | sed 's/.*: *"\(.*\)"/\1/')
+  MARKETING_VERSION=$(sed -n 's/^let marketingVersion = "\(.*\)"/\1/p' "$PROJECT_SWIFT" | head -1)
+  BUILD_NUMBER=$(sed -n 's/^let currentProjectVersion = "\(.*\)"/\1/p' "$PROJECT_SWIFT" | head -1)
 fi
 
 if [ -z "$MARKETING_VERSION" ] || [ -z "$BUILD_NUMBER" ]; then
-  echo "Error: Could not determine version. Set MARKETING_VERSION and BUILD_NUMBER env vars or check $PROJECT_YML"
+  echo "Error: Could not determine version. Set MARKETING_VERSION and BUILD_NUMBER env vars or check $PROJECT_SWIFT"
   exit 1
 fi
 

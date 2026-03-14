@@ -33,7 +33,9 @@ jobs:
         run: ./scripts/fetch-sparkle.sh
 
       - name: Generate Xcode project
-        run: cd WuhuApp && xcodegen generate
+        run: |
+          tuist install
+          tuist generate
 
       - name: Build notarized macOS app
         run: ./scripts/build-notarized-mac.sh --skip-gen --no-upload
@@ -74,7 +76,9 @@ jobs:
         run: ./scripts/fetch-sparkle.sh
 
       - name: Generate Xcode project
-        run: cd WuhuApp && xcodegen generate
+        run: |
+          tuist install
+          tuist generate
 
       - name: Build and upload to TestFlight
         run: ./scripts/build-testflight.sh --skip-gen

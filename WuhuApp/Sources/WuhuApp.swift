@@ -7,7 +7,6 @@ import SwiftUI
 struct WuhuApp: App {
   #if os(macOS)
   @StateObject private var updater = SoftwareUpdater()
-  @State private var embeddedRunner = EmbeddedRunner()
   #endif
 
   var body: some Scene {
@@ -36,16 +35,8 @@ struct WuhuApp: App {
             return ws.first(where: { $0.id == id }) ?? ws.first ?? .default
           }(),
           onSwitchWorkspace: nil,
-          embeddedRunner: embeddedRunner,
         )
       }
-    #endif
-  }
-
-  init() {
-    #if os(macOS)
-    // Auto-start the embedded runner if it was previously enabled
-    embeddedRunner.startIfNeeded()
     #endif
   }
 }
