@@ -9,7 +9,7 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 FRAMEWORKS_DIR="$PROJECT_ROOT/WuhuApp/Frameworks"
 SPARKLE_DIR="$FRAMEWORKS_DIR/Sparkle.xcframework"
 
-SPARKLE_VERSION="2.7.0"
+SPARKLE_VERSION="2.9.0"
 SPARKLE_URL="https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-for-Swift-Package-Manager.zip"
 
 if [ -d "$SPARKLE_DIR" ]; then
