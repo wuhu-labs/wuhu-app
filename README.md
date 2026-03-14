@@ -4,20 +4,20 @@ Native Wuhu apps for macOS and iOS.
 
 ## Setup
 
-Requires [Tuist](https://tuist.dev):
+Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen):
 
 ```bash
-brew install tuist
+brew install xcodegen
 ```
 
-Generate the Xcode project:
+Fetch Sparkle framework and generate the Xcode project:
 
 ```bash
-tuist install
-tuist generate
+./scripts/fetch-sparkle.sh
+cd WuhuApp && xcodegen generate
 ```
 
-Then open `WuhuApp.xcworkspace` in Xcode.
+Then open `WuhuApp/WuhuApp.xcodeproj` in Xcode.
 
 ## Targets
 
@@ -30,19 +30,19 @@ Then open `WuhuApp.xcworkspace` in Xcode.
 
 ```bash
 # macOS
-xcodebuild build -workspace WuhuApp.xcworkspace -scheme WuhuAppMac -destination 'platform=macOS' -quiet
+xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuAppMac -destination 'platform=macOS' -quiet
 
 # iOS
-xcodebuild build -workspace WuhuApp.xcworkspace -scheme WuhuApp -destination 'generic/platform=iOS Simulator' -quiet
+xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination 'generic/platform=iOS' -quiet
 ```
 
 ## Releasing a New Version
 
-Both macOS and iOS share local default version numbers in `Project.swift`:
+Both macOS and iOS share version numbers in `WuhuApp/project.yml`:
 
-```swift
-let marketingVersion = "1.0.3"      // User-facing version
-let currentProjectVersion = "34"    // Local default build number
+```yaml
+MARKETING_VERSION: "1.0.0"     # User-facing version (semver)
+CURRENT_PROJECT_VERSION: "26"  # Monotonically increasing build number
 ```
 
 These defaults are only used for **local dev builds** (⌘R in Xcode). CI
@@ -53,8 +53,8 @@ derives the version entirely from the git tag.
 Just tag and push:
 
 ```bash
-git tag v1.0.3-34
-git push origin v1.0.3-34
+git tag v1.0.0-27
+git push origin v1.0.0-27
 ```
 
 Tag format: **`v{MARKETING_VERSION}-{BUILD_NUMBER}`**
@@ -95,7 +95,8 @@ Existing macOS users get a native Sparkle update dialog automatically.
 
 The macOS app uses [Sparkle](https://sparkle-project.org/) for self-update:
 
-- Sparkle is downloaded by Tuist as a binary package artifact during `tuist install`
+- Sparkle xcframework is downloaded at build time by `scripts/fetch-sparkle.sh`
+  (not committed to git — binary frameworks don't survive git round-trips)
 - Updates are signed with EdDSA (key at `~/.wuhu/keys/sparkle_eddsa_key.priv`)
 - Appcast served from `https://wuhu.ai/releases/appcast.xml`
 - Public key embedded in the macOS Info.plist (`SUPublicEDKey`)
@@ -111,7 +112,7 @@ service that survives reboots.
 - [wuhu-core](https://github.com/wuhu-labs/wuhu-core) — WuhuAPI, WuhuClient, WuhuCoreClient
 - [swift-composable-architecture](https://github.com/pointfreeco/swift-composable-architecture) — TCA
 - [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) — Markdown rendering
-- [Sparkle](https://sparkle-project.org/) 2.7.0 — macOS auto-update
+- [Sparkle](https://sparkle-project.org/) 2.7.0 — macOS auto-update (fetched at build time)
 
 ## License
 

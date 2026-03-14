@@ -10,22 +10,24 @@ AGENTS.local.md
 .build/
 .swiftpm/
 Package.resolved
-Tuist/.build/
 
 # Xcode
-Derived/
 DerivedData/
 **/xcuserdata/
 *.xcuserstate
 
-# Tuist-generated Xcode files
-*.xcodeproj/
-*.xcworkspace/
+# Generated Xcode project (source of truth is project.yml)
+WuhuApp/WuhuApp.xcodeproj
+
+# Generated Info.plist
+WuhuApp/Sources/Info.plist
+WuhuApp/Sources/Info-macOS.plist
 
 # Build artifacts
-.derived/
 build-mac/
-build/
+
+# Sparkle xcframework (downloaded at build time, not committed)
+WuhuApp/Frameworks/
 
 # Sparkle tools (large binaries, not needed in repo)
 scripts/sign_update

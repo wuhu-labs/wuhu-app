@@ -2,13 +2,14 @@
 set -euo pipefail
 
 # Notarized macOS Build Script for Wuhu
-# Usage: ./scripts/build-notarized-mac.sh [--no-upload]
+# Usage: ./scripts/build-notarized-mac.sh [--skip-gen] [--no-upload]
 #
 # Produces a notarized, stapled .app inside a zip. By default copies
 # the result to iCloud Desktop.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_DIR="$PROJECT_ROOT/WuhuApp"
 BUILD_DIR="$PROJECT_ROOT/build-mac"
 
 # Signing & notarization
@@ -18,7 +19,7 @@ ASC_KEY_ID="3U39ZA4G2A"
 ASC_ISSUER_ID="d782de6f-d166-4df4-8124-a96926af646b"
 ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
-# The macOS target product name is "Wuhu", so the .app is Wuhu.app
+# The PRODUCT_NAME in project.yml is "Wuhu", so the .app is Wuhu.app
 APP_NAME="Wuhu"
 
 # Output
@@ -35,9 +36,11 @@ if [ -n "${BUILD_NUMBER:-}" ]; then
 fi
 
 # Parse args
+SKIP_GEN=false
 NO_UPLOAD=false
 for arg in "$@"; do
     case $arg in
+        --skip-gen) SKIP_GEN=true ;;
         --no-upload) NO_UPLOAD=true ;;
     esac
 done
@@ -45,12 +48,17 @@ done
 echo "🚀 Wuhu macOS Notarized Build"
 echo "=============================="
 
+# Step 0: Fetch Sparkle if needed
+"$SCRIPT_DIR/fetch-sparkle.sh"
+
 # Step 1: Generate Xcode project
-echo "📦 Installing Tuist dependencies..."
-cd "$PROJECT_ROOT"
-tuist install
-echo "📦 Generating Xcode project..."
-tuist generate --cache-profile none
+if [ "$SKIP_GEN" = false ]; then
+    echo "📦 Generating Xcode project..."
+    cd "$APP_DIR"
+    xcodegen generate
+else
+    echo "⏭️  Skipping xcodegen (--skip-gen)"
+fi
 
 # Step 2: Clean build directory
 echo "🧹 Cleaning build directory..."
@@ -59,9 +67,9 @@ mkdir -p "$BUILD_DIR"
 
 # Step 3: Archive
 echo "🔨 Archiving..."
-cd "$PROJECT_ROOT"
+cd "$APP_DIR"
 xcodebuild archive \
-    -workspace WuhuApp.xcworkspace \
+    -project WuhuApp.xcodeproj \
     -scheme WuhuAppMac \
     -destination "generic/platform=macOS" \
     -archivePath "$BUILD_DIR/${APP_NAME}.xcarchive" \
