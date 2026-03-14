@@ -2,10 +2,11 @@
 set -euo pipefail
 
 # TestFlight Build Script for Wuhu
-# Usage: ./scripts/build-testflight.sh [--no-upload]
+# Usage: ./scripts/build-testflight.sh [--skip-gen] [--no-upload]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+APP_DIR="$PROJECT_ROOT/WuhuApp"
 BUILD_DIR="$PROJECT_ROOT/build"
 
 # ASC API credentials
@@ -23,9 +24,11 @@ if [ -n "${BUILD_NUMBER:-}" ]; then
 fi
 
 # Parse args
+SKIP_GEN=false
 NO_UPLOAD=false
 for arg in "$@"; do
     case $arg in
+        --skip-gen) SKIP_GEN=true ;;
         --no-upload) NO_UPLOAD=true ;;
     esac
 done
@@ -34,11 +37,13 @@ echo "🚀 Wuhu TestFlight Build"
 echo "========================"
 
 # Step 1: Generate Xcode project
-echo "📦 Installing Tuist dependencies..."
-cd "$PROJECT_ROOT"
-tuist install
-echo "📦 Generating Xcode project..."
-tuist generate --cache-profile none
+if [ "$SKIP_GEN" = false ]; then
+    echo "📦 Generating Xcode project..."
+    cd "$APP_DIR"
+    xcodegen generate
+else
+    echo "⏭️  Skipping xcodegen (--skip-gen)"
+fi
 
 # Step 2: Clean build directory
 echo "🧹 Cleaning build directory..."
@@ -47,9 +52,9 @@ mkdir -p "$BUILD_DIR"
 
 # Step 3: Archive
 echo "🔨 Archiving..."
-cd "$PROJECT_ROOT"
+cd "$APP_DIR"
 xcodebuild archive \
-    -workspace WuhuApp.xcworkspace \
+    -project WuhuApp.xcodeproj \
     -scheme WuhuApp \
     -destination "generic/platform=iOS" \
     -archivePath "$BUILD_DIR/WuhuApp.xcarchive" \

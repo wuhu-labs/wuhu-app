@@ -11,26 +11,32 @@ HTTP client library.
 
 ## Project Setup
 
-Source of truth is `Project.swift` and `Tuist/Package.swift` (Tuist). The
-generated `.xcodeproj` / `.xcworkspace` files are not committed.
+Source of truth is `WuhuApp/project.yml` (XcodeGen). The `.xcodeproj` is
+generated, not committed.
 
 ```bash
-tuist install
-tuist generate
+cd WuhuApp && xcodegen generate
 ```
 
 The macOS target (`WuhuAppMac`) depends on
-[Sparkle](https://github.com/sparkle-project/Sparkle) for auto-updates.
-Tuist downloads Sparkle's binary artifact as part of `tuist install`.
+[Sparkle](https://github.com/sparkle-project/Sparkle) for auto-updates. The
+`Sparkle.xcframework` is **not committed** — fetch it before building:
+
+```bash
+./scripts/fetch-sparkle.sh
+```
+
+The script is idempotent; it skips the download if the framework is already
+present.
 
 ## Build
 
 ```bash
 # macOS
-xcodebuild build -workspace WuhuApp.xcworkspace -scheme WuhuAppMac -destination 'platform=macOS' -quiet
+xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuAppMac -destination 'platform=macOS' -quiet
 
 # iOS
-xcodebuild build -workspace WuhuApp.xcworkspace -scheme WuhuApp -destination 'generic/platform=iOS Simulator' -quiet
+xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination 'generic/platform=iOS' -quiet
 ```
 
 ## Release
@@ -46,7 +52,7 @@ git push origin v1.0.1-31
 
 The CI workflow **parses the version and build number exclusively from the
 tag** and injects them into the build at compile time. You do **not** need to
-update `marketingVersion` or `currentProjectVersion` in `Project.swift` —
+update `MARKETING_VERSION` or `CURRENT_PROJECT_VERSION` in `project.yml` —
 just push the tag and CI handles the rest.
 
 ### Build numbering

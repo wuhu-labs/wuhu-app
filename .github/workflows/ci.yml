@@ -15,15 +15,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fetch Sparkle
+        run: ./scripts/fetch-sparkle.sh
+
       - name: Generate Xcode project
-        run: |
-          tuist install
-          tuist generate
+        run: cd WuhuApp && xcodegen generate
 
       - name: Build macOS
         run: >
           xcodebuild build
-          -workspace WuhuApp.xcworkspace
+          -project WuhuApp/WuhuApp.xcodeproj
           -scheme WuhuAppMac
           -destination 'platform=macOS'
           -skipMacroValidation
@@ -36,9 +37,9 @@ jobs:
       - name: Build iOS
         run: >
           xcodebuild build
-          -workspace WuhuApp.xcworkspace
+          -project WuhuApp/WuhuApp.xcodeproj
           -scheme WuhuApp
-          -destination 'generic/platform=iOS Simulator'
+          -destination 'generic/platform=iOS'
           -skipMacroValidation
           -skipPackagePluginValidation
           CODE_SIGN_IDENTITY=""
