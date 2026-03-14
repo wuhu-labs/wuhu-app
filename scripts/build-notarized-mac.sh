@@ -9,7 +9,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-APP_DIR="$PROJECT_ROOT/WuhuApp"
 BUILD_DIR="$PROJECT_ROOT/build-mac"
 
 # Signing & notarization
@@ -19,7 +18,7 @@ ASC_KEY_ID="3U39ZA4G2A"
 ASC_ISSUER_ID="d782de6f-d166-4df4-8124-a96926af646b"
 ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
 
-# The PRODUCT_NAME in project.yml is "Wuhu", so the .app is Wuhu.app
+# The macOS target product name is "Wuhu", so the .app is Wuhu.app
 APP_NAME="Wuhu"
 
 # Output
@@ -53,11 +52,13 @@ echo "=============================="
 
 # Step 1: Generate Xcode project
 if [ "$SKIP_GEN" = false ]; then
+    echo "📦 Installing Tuist dependencies..."
+    cd "$PROJECT_ROOT"
+    tuist install
     echo "📦 Generating Xcode project..."
-    cd "$APP_DIR"
-    xcodegen generate
+    tuist generate
 else
-    echo "⏭️  Skipping xcodegen (--skip-gen)"
+    echo "⏭️  Skipping tuist install/generate (--skip-gen)"
 fi
 
 # Step 2: Clean build directory
@@ -67,9 +68,9 @@ mkdir -p "$BUILD_DIR"
 
 # Step 3: Archive
 echo "🔨 Archiving..."
-cd "$APP_DIR"
+cd "$PROJECT_ROOT"
 xcodebuild archive \
-    -project WuhuApp.xcodeproj \
+    -workspace WuhuApp.xcworkspace \
     -scheme WuhuAppMac \
     -destination "generic/platform=macOS" \
     -archivePath "$BUILD_DIR/${APP_NAME}.xcarchive" \

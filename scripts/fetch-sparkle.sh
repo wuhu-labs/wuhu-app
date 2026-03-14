@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Download the Sparkle xcframework if it's not already present.
-# Called by build scripts before xcodegen generate.
+# Called by build scripts before tuist generate.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

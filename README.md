@@ -4,20 +4,21 @@ Native Wuhu apps for macOS and iOS.
 
 ## Setup
 
-Requires [XcodeGen](https://github.com/yonaskolb/XcodeGen):
+Requires [Tuist](https://tuist.dev):
 
 ```bash
-brew install xcodegen
+brew install tuist
 ```
 
 Fetch Sparkle framework and generate the Xcode project:
 
 ```bash
 ./scripts/fetch-sparkle.sh
-cd WuhuApp && xcodegen generate
+tuist install
+tuist generate
 ```
 
-Then open `WuhuApp/WuhuApp.xcodeproj` in Xcode.
+Then open `WuhuApp.xcworkspace` in Xcode.
 
 ## Targets
 
@@ -30,19 +31,19 @@ Then open `WuhuApp/WuhuApp.xcodeproj` in Xcode.
 
 ```bash
 # macOS
-xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuAppMac -destination 'platform=macOS' -quiet
+xcodebuild build -workspace WuhuApp.xcworkspace -scheme WuhuAppMac -destination 'platform=macOS' -quiet
 
 # iOS
-xcodebuild build -project WuhuApp/WuhuApp.xcodeproj -scheme WuhuApp -destination 'generic/platform=iOS' -quiet
+xcodebuild build -workspace WuhuApp.xcworkspace -scheme WuhuApp -destination 'generic/platform=iOS Simulator' -quiet
 ```
 
 ## Releasing a New Version
 
-Both macOS and iOS share version numbers in `WuhuApp/project.yml`:
+Both macOS and iOS share local default version numbers in `Project.swift`:
 
-```yaml
-MARKETING_VERSION: "1.0.0"     # User-facing version (semver)
-CURRENT_PROJECT_VERSION: "26"  # Monotonically increasing build number
+```swift
+let marketingVersion = "1.0.3"      // User-facing version
+let currentProjectVersion = "34"    // Local default build number
 ```
 
 These defaults are only used for **local dev builds** (⌘R in Xcode). CI
@@ -53,8 +54,8 @@ derives the version entirely from the git tag.
 Just tag and push:
 
 ```bash
-git tag v1.0.0-27
-git push origin v1.0.0-27
+git tag v1.0.3-34
+git push origin v1.0.3-34
 ```
 
 Tag format: **`v{MARKETING_VERSION}-{BUILD_NUMBER}`**

@@ -6,7 +6,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-APP_DIR="$PROJECT_ROOT/WuhuApp"
 BUILD_DIR="$PROJECT_ROOT/build"
 
 # ASC API credentials
@@ -38,11 +37,13 @@ echo "========================"
 
 # Step 1: Generate Xcode project
 if [ "$SKIP_GEN" = false ]; then
+    echo "📦 Installing Tuist dependencies..."
+    cd "$PROJECT_ROOT"
+    tuist install
     echo "📦 Generating Xcode project..."
-    cd "$APP_DIR"
-    xcodegen generate
+    tuist generate
 else
-    echo "⏭️  Skipping xcodegen (--skip-gen)"
+    echo "⏭️  Skipping tuist install/generate (--skip-gen)"
 fi
 
 # Step 2: Clean build directory
@@ -52,9 +53,9 @@ mkdir -p "$BUILD_DIR"
 
 # Step 3: Archive
 echo "🔨 Archiving..."
-cd "$APP_DIR"
+cd "$PROJECT_ROOT"
 xcodebuild archive \
-    -project WuhuApp.xcodeproj \
+    -workspace WuhuApp.xcworkspace \
     -scheme WuhuApp \
     -destination "generic/platform=iOS" \
     -archivePath "$BUILD_DIR/WuhuApp.xcarchive" \
