@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Notarized macOS Build Script for Wuhu
-# Usage: ./scripts/build-notarized-mac.sh [--skip-gen] [--no-upload]
+# Usage: ./scripts/build-notarized-mac.sh [--no-upload]
 #
 # Produces a notarized, stapled .app inside a zip. By default copies
 # the result to iCloud Desktop.
@@ -35,11 +35,9 @@ if [ -n "${BUILD_NUMBER:-}" ]; then
 fi
 
 # Parse args
-SKIP_GEN=false
 NO_UPLOAD=false
 for arg in "$@"; do
     case $arg in
-        --skip-gen) SKIP_GEN=true ;;
         --no-upload) NO_UPLOAD=true ;;
     esac
 done
@@ -48,15 +46,11 @@ echo "🚀 Wuhu macOS Notarized Build"
 echo "=============================="
 
 # Step 1: Generate Xcode project
-if [ "$SKIP_GEN" = false ]; then
-    echo "📦 Installing Tuist dependencies..."
-    cd "$PROJECT_ROOT"
-    tuist install
-    echo "📦 Generating Xcode project..."
-    tuist generate --cache-profile none
-else
-    echo "⏭️  Skipping tuist install/generate (--skip-gen)"
-fi
+echo "📦 Installing Tuist dependencies..."
+cd "$PROJECT_ROOT"
+tuist install
+echo "📦 Generating Xcode project..."
+tuist generate --cache-profile none
 
 # Step 2: Clean build directory
 echo "🧹 Cleaning build directory..."
