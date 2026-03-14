@@ -29,13 +29,8 @@ jobs:
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-      - name: Generate Xcode project
-        run: |
-          tuist install
-          tuist generate
-
       - name: Build notarized macOS app
-        run: ./scripts/build-notarized-mac.sh --skip-gen --no-upload
+        run: ./scripts/build-notarized-mac.sh --no-upload
         env:
           MARKETING_VERSION: ${{ steps.version.outputs.marketing }}
           BUILD_NUMBER: ${{ steps.version.outputs.build }}
@@ -69,13 +64,8 @@ jobs:
         env:
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
 
-      - name: Generate Xcode project
-        run: |
-          tuist install
-          tuist generate
-
       - name: Build and upload to TestFlight
-        run: ./scripts/build-testflight.sh --skip-gen
+        run: ./scripts/build-testflight.sh
         env:
           MARKETING_VERSION: ${{ steps.version.outputs.marketing }}
           BUILD_NUMBER: ${{ steps.version.outputs.build }}

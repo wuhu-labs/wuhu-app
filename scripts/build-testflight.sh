@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # TestFlight Build Script for Wuhu
-# Usage: ./scripts/build-testflight.sh [--skip-gen] [--no-upload]
+# Usage: ./scripts/build-testflight.sh [--no-upload]
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -23,11 +23,9 @@ if [ -n "${BUILD_NUMBER:-}" ]; then
 fi
 
 # Parse args
-SKIP_GEN=false
 NO_UPLOAD=false
 for arg in "$@"; do
     case $arg in
-        --skip-gen) SKIP_GEN=true ;;
         --no-upload) NO_UPLOAD=true ;;
     esac
 done
@@ -36,15 +34,11 @@ echo "🚀 Wuhu TestFlight Build"
 echo "========================"
 
 # Step 1: Generate Xcode project
-if [ "$SKIP_GEN" = false ]; then
-    echo "📦 Installing Tuist dependencies..."
-    cd "$PROJECT_ROOT"
-    tuist install
-    echo "📦 Generating Xcode project..."
-    tuist generate
-else
-    echo "⏭️  Skipping tuist install/generate (--skip-gen)"
-fi
+echo "📦 Installing Tuist dependencies..."
+cd "$PROJECT_ROOT"
+tuist install
+echo "📦 Generating Xcode project..."
+tuist generate --cache-profile none
 
 # Step 2: Clean build directory
 echo "🧹 Cleaning build directory..."
