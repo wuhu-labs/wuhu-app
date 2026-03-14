@@ -58,7 +58,6 @@ let macOSInfoPlist: [String: Plist.Value] = [
   "LSApplicationCategoryType": "public.app-category.developer-tools",
   "SUFeedURL": "https://wuhu.ai/releases/appcast.xml",
   "SUPublicEDKey": "cLD5wooImNT4Loh8TXGByHrSKnKtzU5T4As3L5L5BA4=",
-  "SUEnableInstallerLauncherService": true,
   "NSAppTransportSecurity": [
     "NSAllowsArbitraryLoads": true,
   ],
