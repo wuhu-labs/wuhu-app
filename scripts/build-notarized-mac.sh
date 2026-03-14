@@ -53,7 +53,7 @@ if [ "$SKIP_GEN" = false ]; then
     cd "$PROJECT_ROOT"
     tuist install
     echo "📦 Generating Xcode project..."
-    tuist generate
+    tuist generate --cache-profile none
 else
     echo "⏭️  Skipping tuist install/generate (--skip-gen)"
 fi

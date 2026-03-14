@@ -32,7 +32,7 @@ jobs:
       - name: Generate Xcode project
         run: |
           tuist install
-          tuist generate
+          tuist generate --cache-profile none
 
       - name: Build notarized macOS app
         run: ./scripts/build-notarized-mac.sh --skip-gen --no-upload
@@ -72,7 +72,7 @@ jobs:
       - name: Generate Xcode project
         run: |
           tuist install
-          tuist generate
+          tuist generate --cache-profile none
 
       - name: Build and upload to TestFlight
         run: ./scripts/build-testflight.sh --skip-gen
