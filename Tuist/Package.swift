@@ -1,9 +1,35 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
+#if TUIST
+import Foundation
+import struct ProjectDescription.PackageSettings
+
+private let generatedDynamicProducts: [String] = {
+  let generatedURL = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent()
+    .appendingPathComponent("DynamicProducts.json")
+
+  guard let data = try? Data(contentsOf: generatedURL),
+        let products = try? JSONDecoder().decode([String].self, from: data)
+  else {
+    return []
+  }
+
+  return products
+}()
+
+let packageSettings = PackageSettings(
+  productTypes: Dictionary(
+    uniqueKeysWithValues: generatedDynamicProducts.map { ($0, .framework) }
+  )
+)
+#endif
+
 let package = Package(
   name: "WuhuAppDependencies",
   dependencies: [
+    .package(url: "https://github.com/swift-server/async-http-client.git", from: "1.32.0"),
     .package(url: "https://github.com/wuhu-labs/wuhu-core.git", exact: "0.8.0"),
     .package(url: "https://github.com/pointfreeco/swift-composable-architecture.git", from: "1.23.1"),
     .package(url: "https://github.com/pointfreeco/swift-identified-collections.git", from: "1.1.1"),
