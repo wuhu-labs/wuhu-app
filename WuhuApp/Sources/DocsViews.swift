@@ -1,6 +1,6 @@
 import ComposableArchitecture
-import MarkdownUI
 import SwiftUI
+import WuhuDocView
 
 // MARK: - Docs List (content column)
 
@@ -49,30 +49,14 @@ struct DocsDetailView: View {
       ProgressView()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     } else if let doc = store.selectedDoc {
-      ScrollView {
-        VStack(alignment: .leading, spacing: 12) {
-          HStack(spacing: 6) {
-            ForEach(doc.tags, id: \.self) { tag in
-              Text(tag)
-                .font(.caption)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(.orange.opacity(0.12))
-                .foregroundStyle(.orange)
-                .clipShape(Capsule())
-            }
-            Spacer()
-            Text("Updated \(doc.updatedAt, style: .relative) ago")
-              .font(.caption)
-              .foregroundStyle(.secondary)
-          }
-          Divider()
-          Markdown(doc.markdownContent)
-            .textSelection(.enabled)
-        }
-        .padding(24)
-        .frame(maxWidth: 800)
-      }
+      let document = MarkdownFlattener.buildDocDocument(
+        id: doc.id,
+        title: doc.title,
+        tags: doc.tags,
+        updatedAt: doc.updatedAt,
+        markdownContent: doc.markdownContent
+      )
+      DocView(document: document)
     } else {
       ContentUnavailableView(
         "No Document Selected",
