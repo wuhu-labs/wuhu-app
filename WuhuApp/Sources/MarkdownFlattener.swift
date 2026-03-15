@@ -55,6 +55,28 @@ enum MarkdownFlattener {
     let section = DocSection(id: id, blocks: allBlocks)
     return WuhuDocView.Document(sections: [section])
   }
+
+  /// Build a simple `Document` from raw markdown content without a header.
+  /// Used by the new docs tree view where the breadcrumb replaces the header.
+  static func buildSimpleDocument(
+    id: String,
+    markdownContent: String
+  ) -> WuhuDocView.Document {
+    let contentBlocks = flatten(markdownContent, sectionID: id)
+
+    var allBlocks: [FlatBlock] = []
+    for (i, var block) in contentBlocks.enumerated() {
+      block.id = BlockID(
+        sectionID: id,
+        index: i,
+        kind: block.kind
+      )
+      allBlocks.append(block)
+    }
+
+    let section = DocSection(id: id, blocks: allBlocks)
+    return WuhuDocView.Document(sections: [section])
+  }
 }
 
 // MARK: - Block Flattener (MarkupWalker)

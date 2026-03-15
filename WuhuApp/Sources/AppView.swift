@@ -169,7 +169,7 @@ struct AppView: View {
       IssuesDetailView(store: store.scope(state: \.issues, action: \.issues))
     case .docs:
       dualPane {
-        DocsListView(store: store.scope(state: \.docs, action: \.docs))
+        DocsTreeView(store: store.scope(state: \.docs, action: \.docs))
       } detail: {
         DocsDetailView(store: store.scope(state: \.docs, action: \.docs))
       }
@@ -210,7 +210,7 @@ struct AppView: View {
     private var hasDetailSelection: Bool {
       switch store.selection {
       case .sessions: store.sessions.selectedSessionID != nil
-      case .docs: store.docs.selectedDocID != nil
+      case .docs: store.docs.selectedItem != nil
       default: false
       }
     }
@@ -219,7 +219,7 @@ struct AppView: View {
     private func clearDetailSelection() {
       switch store.selection {
       case .sessions: store.send(.sessions(.sessionSelected(nil)))
-      case .docs: store.send(.docs(.docSelected(nil)))
+      case .docs: store.send(.docs(.itemSelected(nil)))
       default: break
       }
     }

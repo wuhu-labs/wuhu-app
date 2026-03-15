@@ -2,6 +2,7 @@ import Dependencies
 import Foundation
 import IdentifiedCollections
 import PiAI
+import WorkspaceContracts
 import WuhuAPI
 import WuhuClient
 import WuhuCoreClient
@@ -13,6 +14,7 @@ struct APIClient: Sendable {
   var getSession: @Sendable (_ id: String) async throws -> WuhuGetSessionResponse
   var createSession: @Sendable (_ request: WuhuCreateSessionRequest) async throws -> WuhuSession
   var listWorkspaceDocs: @Sendable () async throws -> [WuhuWorkspaceDocSummary]
+  var workspaceTree: @Sendable () async throws -> DirectoryNode
   var readWorkspaceDoc: @Sendable (_ path: String) async throws -> WuhuWorkspaceDoc
   var enqueue: @Sendable (_ sessionID: String, _ content: MessageContent, _ user: String?, _ lane: UserQueueLane) async throws -> String
   var uploadBlob: @Sendable (_ sessionID: String, _ data: Data, _ mimeType: String) async throws -> String
@@ -89,6 +91,7 @@ extension APIClient: DependencyKey {
       getSession: { try await makeClient().getSession(id: $0) },
       createSession: { try await makeClient().createSession($0) },
       listWorkspaceDocs: { try await makeClient().listWorkspaceDocs() },
+      workspaceTree: { try await makeClient().workspaceTree() },
       readWorkspaceDoc: { try await makeClient().readWorkspaceDoc(path: $0) },
       enqueue: { sessionID, content, user, lane in
         let clientLane: WuhuClient.EnqueueLane = switch lane {
@@ -142,6 +145,7 @@ extension APIClient: DependencyKey {
       )
     },
     listWorkspaceDocs: { [] },
+    workspaceTree: { DirectoryNode(path: "", name: "", children: [], hasIndex: false) },
     readWorkspaceDoc: { _ in WuhuWorkspaceDoc(path: "", frontmatter: [:], body: "") },
     enqueue: { _, _, _, _ in "" },
     uploadBlob: { _, _, _ in "blob://preview/test.png" },
