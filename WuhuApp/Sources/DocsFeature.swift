@@ -25,6 +25,10 @@ struct DocsFeature {
     /// The loaded markdown body for the current document.
     var currentDocBody: String?
 
+    /// Pre-fetched query results for wuhu-view blocks, keyed by SQL string.
+    /// Populated when a doc containing wuhu-view code blocks is loaded.
+    var queryResults: [String: [[String: String]]] = [:]
+
     /// Whether content is currently loading.
     var isLoading = false
 
@@ -45,7 +49,7 @@ struct DocsFeature {
     case treeLoadFailed(String)
     case toggleExpanded(String)
     case itemSelected(SidebarItem?)
-    case docLoaded(path: String, body: String)
+    case docLoaded(path: String, body: String, queryResults: [String: [[String: String]]])
     case docLoadFailed(String)
     case linkTapped(url: URL)
   }
@@ -96,11 +100,12 @@ struct DocsFeature {
         }
         return loadDoc(state: &state, path: docPath)
 
-      case let .docLoaded(path, body):
+      case let .docLoaded(path, body, queryResults):
         state.isLoading = false
         state.loadError = nil
         state.currentDocPath = path
         state.currentDocBody = body
+        state.queryResults = queryResults
         return .none
 
       case let .docLoadFailed(error):
@@ -158,7 +163,23 @@ struct DocsFeature {
     state.loadError = nil
     return .run { send in
       let doc = try await apiClient.readWorkspaceDoc(path)
-      await send(.docLoaded(path: path, body: doc.body))
+      let body = doc.body
+
+      // Flatten once to extract SQL queries from custom kanban blocks.
+      // This is the same code path the view uses, so keys match exactly.
+      let blocks = MarkdownFlattener.flatten(body, sectionID: path)
+      var queryResults: [String: [[String: String]]] = [:]
+      for block in blocks {
+        if case .custom("kanban") = block.kind,
+           case .custom(let content) = block.content,
+           let sql = content.fields["sql"] {
+          if let rows = try? await apiClient.workspaceQuery(sql) {
+            queryResults[sql] = rows
+          }
+        }
+      }
+
+      await send(.docLoaded(path: path, body: body, queryResults: queryResults))
     } catch: { error, send in
       await send(.docLoadFailed(error.localizedDescription))
     }

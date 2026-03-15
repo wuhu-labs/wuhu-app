@@ -47,10 +47,6 @@ struct AppView: View {
         "Sessions", icon: "terminal", tag: .sessions,
         count: store.sessions.sessions.count(where: { $0.status == .running }),
       )
-      sidebarRow(
-        "Issues", icon: "checklist", tag: .issues,
-        count: store.issues.issues.count(where: { $0.status == .open }),
-      )
       sidebarRow("Docs", icon: "doc.text", tag: .docs)
     }
     .listStyle(.sidebar)
@@ -165,8 +161,6 @@ struct AppView: View {
       } detail: {
         SessionDetailView(store: store.scope(state: \.sessions, action: \.sessions))
       }
-    case .issues:
-      IssuesDetailView(store: store.scope(state: \.issues, action: \.issues))
     case .docs:
       dualPane {
         DocsTreeView(store: store.scope(state: \.docs, action: \.docs))

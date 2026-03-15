@@ -36,6 +36,9 @@ packages:
   SwiftMarkdown:
     url: https://github.com/swiftlang/swift-markdown.git
     from: 0.7.3
+  Yams:
+    url: https://github.com/jpsim/Yams.git
+    from: 5.0.0
 
 targets:
   WuhuApp:
@@ -100,6 +103,8 @@ targets:
         product: WuhuDocView
       - package: SwiftMarkdown
         product: Markdown
+      - package: Yams
+        product: Yams
 
   WuhuAppMac:
     type: application
@@ -158,5 +163,7 @@ targets:
         product: WuhuDocView
       - package: SwiftMarkdown
         product: Markdown
+      - package: Yams
+        product: Yams
       - framework: Frameworks/Sparkle.xcframework
         embed: true

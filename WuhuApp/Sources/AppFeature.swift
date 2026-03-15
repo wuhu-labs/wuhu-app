@@ -9,7 +9,6 @@ import WuhuCoreClient
 
 enum SidebarSelection: Hashable {
   case sessions
-  case issues
   case docs
 }
 
@@ -21,7 +20,6 @@ struct AppFeature {
   struct State {
     var selection: SidebarSelection? = .sessions
     var sessions = SessionFeature.State()
-    var issues = IssuesFeature.State()
     var docs = DocsFeature.State()
     var workspaceName = "Wuhu"
     var isLoading = false
@@ -38,21 +36,18 @@ struct AppFeature {
     case onAppear
     case dataLoaded(
       sessions: IdentifiedArrayOf<MockSession>,
-      tree: DirectoryNode,
-      issues: IdentifiedArrayOf<MockIssue>
+      tree: DirectoryNode
     )
     case loadFailed
     case refreshTick
     case refreshDataLoaded(
       sessions: IdentifiedArrayOf<MockSession>,
-      tree: DirectoryNode,
-      issues: IdentifiedArrayOf<MockIssue>
+      tree: DirectoryNode
     )
     case createSessionTapped
     case sessionCreated(WuhuSession)
     case sessionCreateFailed(String)
     case docs(DocsFeature.Action)
-    case issues(IssuesFeature.Action)
     case selectionChanged(SidebarSelection?)
     case sessions(SessionFeature.Action)
 
@@ -71,7 +66,6 @@ struct AppFeature {
 
   var body: some ReducerOf<Self> {
     Scope(state: \.sessions, action: \.sessions) { SessionFeature() }
-    Scope(state: \.issues, action: \.issues) { IssuesFeature() }
     Scope(state: \.docs, action: \.docs) { DocsFeature() }
 
     Reduce<State, Action> { state, action in
@@ -99,11 +93,9 @@ struct AppFeature {
         return .run { send in
           async let sessionsResult = apiClient.listSessions(showArchived)
           async let treeResult = apiClient.workspaceTree()
-          async let docsResult = apiClient.listWorkspaceDocs()
 
           let allSessions = try await sessionsResult
           let tree = try await treeResult
-          let allDocs = try await docsResult
 
           let sortedSessions = allSessions.sorted(by: { $0.updatedAt > $1.updatedAt })
           // Fetch session details concurrently for accurate running status
@@ -126,27 +118,17 @@ struct AppFeature {
             uniqueElements: detailedSessions,
           )
 
-          // Parse workspace docs into issues (docs are now handled via tree).
-          var issuesList: [MockIssue] = []
-          for doc in allDocs {
-            if doc.path.hasPrefix("issues/"), let issue = MockIssue.from(doc) {
-              issuesList.append(issue)
-            }
-          }
-
           await send(.dataLoaded(
             sessions: mockSessions,
-            tree: tree,
-            issues: IdentifiedArray(uniqueElements: issuesList),
+            tree: tree
           ))
         } catch: { _, send in
           await send(.loadFailed)
         }
 
-      case let .dataLoaded(sessions, tree, issues):
+      case let .dataLoaded(sessions, tree):
         state.isLoading = false
         state.sessions.sessions = sessions
-        state.issues.issues = issues
         return .send(.docs(.treeLoaded(tree)))
 
       case .loadFailed:
@@ -158,11 +140,9 @@ struct AppFeature {
         return .run { send in
           async let sessionsResult = apiClient.listSessions(showArchived)
           async let treeResult = apiClient.workspaceTree()
-          async let docsResult = apiClient.listWorkspaceDocs()
 
           let allSessions = try await sessionsResult
           let tree = try await treeResult
-          let allDocs = try await docsResult
 
           let mockSessions: IdentifiedArrayOf<MockSession> = IdentifiedArray(
             uniqueElements: allSessions
@@ -170,21 +150,13 @@ struct AppFeature {
               .map { MockSession.from($0) },
           )
 
-          var issuesList: [MockIssue] = []
-          for doc in allDocs {
-            if doc.path.hasPrefix("issues/"), let issue = MockIssue.from(doc) {
-              issuesList.append(issue)
-            }
-          }
-
           await send(.refreshDataLoaded(
             sessions: mockSessions,
-            tree: tree,
-            issues: IdentifiedArray(uniqueElements: issuesList),
+            tree: tree
           ))
         } catch: { _, _ in }
 
-      case let .refreshDataLoaded(sessions, tree, issues):
+      case let .refreshDataLoaded(sessions, tree):
         // Merge sessions: preserve messages, detailed titles, and custom titles
         var mergedSessions: IdentifiedArrayOf<MockSession> = []
         for session in sessions {
@@ -212,19 +184,6 @@ struct AppFeature {
 
         // Update the tree (docs feature handles its own state preservation)
         state.docs.tree = tree
-
-        // Merge issues: preserve loaded markdownContent
-        var mergedIssues: IdentifiedArrayOf<MockIssue> = []
-        for issue in issues {
-          if let existing = state.issues.issues[id: issue.id], !existing.markdownContent.isEmpty {
-            var updated = issue
-            updated.markdownContent = existing.markdownContent
-            mergedIssues.append(updated)
-          } else {
-            mergedIssues.append(issue)
-          }
-        }
-        state.issues.issues = mergedIssues
 
         return .none
 
@@ -283,8 +242,6 @@ struct AppFeature {
         state.sessions.sessions = []
         state.sessions.selectedSessionID = nil
         state.docs = DocsFeature.State()
-        state.issues.issues = []
-        state.issues.selectedIssueID = nil
 
         // Mark as needing reload and trigger it
         state.hasLoaded = false
@@ -298,11 +255,9 @@ struct AppFeature {
           .run { send in
             async let sessionsResult = apiClient.listSessions(showArchived)
             async let treeResult = apiClient.workspaceTree()
-            async let docsResult = apiClient.listWorkspaceDocs()
 
             let allSessions = try await sessionsResult
             let tree = try await treeResult
-            let allDocs = try await docsResult
 
             let sortedSessions = allSessions.sorted(by: { $0.updatedAt > $1.updatedAt })
             let detailedSessions = await withTaskGroup(of: MockSession.self) { group in
@@ -324,17 +279,9 @@ struct AppFeature {
               uniqueElements: detailedSessions,
             )
 
-            var issuesList: [MockIssue] = []
-            for doc in allDocs {
-              if doc.path.hasPrefix("issues/"), let issue = MockIssue.from(doc) {
-                issuesList.append(issue)
-              }
-            }
-
             await send(.dataLoaded(
               sessions: mockSessions,
-              tree: tree,
-              issues: IdentifiedArray(uniqueElements: issuesList),
+              tree: tree
             ))
           } catch: { _, send in
             await send(.loadFailed)
@@ -345,7 +292,7 @@ struct AppFeature {
         state.isShowingWorkspaceSwitcher = shown
         return .none
 
-      case .docs, .issues, .sessions:
+      case .docs, .sessions:
         return .none
       }
     }
