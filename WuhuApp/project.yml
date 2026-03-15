@@ -30,6 +30,12 @@ packages:
   MarkdownUI:
     url: https://github.com/gonzalezreal/swift-markdown-ui
     from: 2.4.0
+  WuhuDocView:
+    url: https://github.com/wuhu-labs/wuhu-markdown-ui.git
+    exactVersion: "0.1.0"
+  SwiftMarkdown:
+    url: https://github.com/swiftlang/swift-markdown.git
+    from: 0.7.3
 
 targets:
   WuhuApp:
@@ -90,6 +96,10 @@ targets:
         product: CasePaths
       - package: MarkdownUI
         product: MarkdownUI
+      - package: WuhuDocView
+        product: WuhuDocView
+      - package: SwiftMarkdown
+        product: Markdown
 
   WuhuAppMac:
     type: application
@@ -144,5 +154,9 @@ targets:
         product: CasePaths
       - package: MarkdownUI
         product: MarkdownUI
+      - package: WuhuDocView
+        product: WuhuDocView
+      - package: SwiftMarkdown
+        product: Markdown
       - framework: Frameworks/Sparkle.xcframework
         embed: true
