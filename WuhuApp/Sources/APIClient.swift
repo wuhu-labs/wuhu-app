@@ -16,6 +16,7 @@ struct APIClient: Sendable {
   var listWorkspaceDocs: @Sendable () async throws -> [WuhuWorkspaceDocSummary]
   var workspaceTree: @Sendable () async throws -> DirectoryNode
   var readWorkspaceDoc: @Sendable (_ path: String) async throws -> WuhuWorkspaceDoc
+  var workspaceQuery: @Sendable (_ sql: String) async throws -> [[String: String]]
   var enqueue: @Sendable (_ sessionID: String, _ content: MessageContent, _ user: String?, _ lane: UserQueueLane) async throws -> String
   var uploadBlob: @Sendable (_ sessionID: String, _ data: Data, _ mimeType: String) async throws -> String
   var renameSession: @Sendable (_ sessionID: String, _ title: String) async throws -> WuhuRenameSessionResponse
@@ -93,6 +94,7 @@ extension APIClient: DependencyKey {
       listWorkspaceDocs: { try await makeClient().listWorkspaceDocs() },
       workspaceTree: { try await makeClient().workspaceTree() },
       readWorkspaceDoc: { try await makeClient().readWorkspaceDoc(path: $0) },
+      workspaceQuery: { try await makeClient().workspaceQuery(sql: $0) },
       enqueue: { sessionID, content, user, lane in
         let clientLane: WuhuClient.EnqueueLane = switch lane {
         case .steer: .steer
@@ -147,6 +149,7 @@ extension APIClient: DependencyKey {
     listWorkspaceDocs: { [] },
     workspaceTree: { DirectoryNode(path: "", name: "", children: [], hasIndex: false) },
     readWorkspaceDoc: { _ in WuhuWorkspaceDoc(path: "", frontmatter: [:], body: "") },
+    workspaceQuery: { _ in [] },
     enqueue: { _, _, _, _ in "" },
     uploadBlob: { _, _, _ in "blob://preview/test.png" },
     renameSession: { _, _ in
@@ -466,47 +469,6 @@ extension MockDoc {
       updatedAt: Date(),
       markdownContent: doc.body,
     )
-  }
-}
-
-extension MockIssue {
-  static func from(_ summary: WuhuWorkspaceDocSummary) -> MockIssue? {
-    guard let statusStr = summary.frontmatter["status"]?.stringValue else { return nil }
-
-    let status: IssueStatus = switch statusStr.lowercased() {
-    case "open": .open
-    case "in progress", "in_progress", "inprogress": .inProgress
-    case "done", "closed": .done
-    default: .open
-    }
-
-    let title = summary.frontmatter["title"]?.stringValue
-      ?? summary.path.components(separatedBy: "/").last ?? summary.path
-    let assignee = summary.frontmatter["assignee"]?.stringValue
-    let priorityStr = summary.frontmatter["priority"]?.stringValue ?? "medium"
-    let priority: Priority = switch priorityStr.lowercased() {
-    case "critical": .critical
-    case "high": .high
-    case "low": .low
-    default: .medium
-    }
-
-    let description = summary.frontmatter["description"]?.stringValue ?? ""
-
-    return MockIssue(
-      id: summary.path,
-      title: title,
-      status: status,
-      assignee: assignee,
-      priority: priority,
-      description: description,
-    )
-  }
-
-  static func from(_ doc: WuhuWorkspaceDoc, existing: MockIssue) -> MockIssue {
-    var updated = existing
-    updated.markdownContent = doc.body
-    return updated
   }
 }
 

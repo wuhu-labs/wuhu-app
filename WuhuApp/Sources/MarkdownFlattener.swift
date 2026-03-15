@@ -1,6 +1,7 @@
 import Foundation
 import Markdown
 import WuhuDocView
+import Yams
 
 // MARK: - Public API
 
@@ -127,6 +128,19 @@ private struct BlockFlattener: MarkupWalker {
   mutating func visitCodeBlock(_ codeBlock: CodeBlock) {
     let language = codeBlock.language
     let code = codeBlock.code
+
+    // Intercept wuhu-view code blocks and emit custom blocks.
+    if language == "wuhu-view", let view = parseWuhuView(code) {
+      var fields = view.fields
+      fields["_source"] = code.trimmingCharacters(in: .whitespacesAndNewlines)
+      emit(
+        kind: .custom(view.type),
+        content: .custom(CustomBlockContent(fields)),
+        indent: indent
+      )
+      return
+    }
+
     emit(
       kind: .codeBlock,
       content: .codeBlock(CodeBlockContent(language: language, code: code)),
@@ -298,4 +312,38 @@ private extension Markup {
   var inlineChildren: [InlineMarkup] {
     children.compactMap { $0 as? InlineMarkup }
   }
+}
+
+// MARK: - Wuhu View Parsing
+
+/// Parsed result of a `wuhu-view` code block body.
+private struct WuhuViewSpec {
+  var type: String
+  var fields: [String: String]
+}
+
+/// Parses the YAML body of a `wuhu-view` code block.
+///
+/// Expected format:
+/// ```yaml
+/// type: kanban
+/// sql: |
+///   SELECT ...
+/// ```
+///
+/// Returns `nil` if the YAML is malformed or `type` is missing.
+private func parseWuhuView(_ body: String) -> WuhuViewSpec? {
+  guard let yaml = try? Yams.load(yaml: body) as? [String: Any] else {
+    return nil
+  }
+  guard let type = yaml["type"] as? String else {
+    return nil
+  }
+  var fields: [String: String] = ["type": type]
+  for (key, value) in yaml where key != "type" {
+    if let stringValue = value as? String {
+      fields[key] = stringValue
+    }
+  }
+  return WuhuViewSpec(type: type, fields: fields)
 }

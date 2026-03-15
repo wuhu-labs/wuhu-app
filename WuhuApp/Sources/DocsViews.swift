@@ -150,11 +150,25 @@ struct DocsDetailView: View {
 
   @ViewBuilder
   private func docContent(path: String, body: String) -> some View {
+    let queryResults = store.queryResults
     let document = MarkdownFlattener.buildSimpleDocument(
       id: path,
       markdownContent: body
     )
-    DocView(document: document)
+    DocView(document: document, customBlockView: { block in
+        guard case .custom(let tag) = block.kind,
+              case .custom(let content) = block.content
+        else { return nil }
+        switch tag {
+        case "kanban":
+          guard let sql = content.fields["sql"] else { return nil }
+          let rows = queryResults[sql] ?? []
+          let source = content.fields["_source"]
+          return AnyView(KanbanBoardView(rows: rows, source: source))
+        default:
+          return nil
+        }
+      })
       .environment(\.openURL, OpenURLAction { url in
         // Intercept workspace-relative links
         if isWorkspaceLink(url) {
